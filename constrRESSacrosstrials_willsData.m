@@ -1,4 +1,4 @@
-function [ressEVEC, ressTS, ressSNR, ressMAPS, hz]= constrRESSacrosstrials_willsData(dataIN, peakfreqsare, usechans, neighbour, window,srate)
+function [ressEVEC, ressTS, ressSNR, ressMAPS, hz]= constrRESSacrosstrials_willsData(dataIN, peakfreqsall, usechans, neighbour, window,srate, ifreq)
 
 
 peakwidt  = .5; % FWHM at peak frequency for stimulus
@@ -6,7 +6,7 @@ peakwidt  = .5; % FWHM at peak frequency for stimulus
 %%%% these need to be calibrated for our closely spaced freqs.
 
 
-    peakfreqsall=[5,15,20,30, 35, 40,45, 60];
+ 
 
 % this bit hard coded, 6 s window length
 % epochdur = sum(abs([-3 3]));
@@ -31,10 +31,10 @@ tid(badtrials)=[];
 % extract EEG data for RESS
 dataIN = squeeze(dataIN(usechans,:,tid));
 
-useneighs=0;
+useneighs=1;
 
 
-peakfreq1=peakfreqsare(1);
+peakfreq1=peakfreqsall(ifreq);
        
         
         ndet = find(peakfreqsall==peakfreq1);

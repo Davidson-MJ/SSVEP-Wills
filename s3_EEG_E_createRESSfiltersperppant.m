@@ -17,12 +17,23 @@ basefol=pwd;
 
 clearvars -except basefol allppants
 dbstop if error
+%%
 
-
-job.concatLiketrialsperppant=1; %also performs RESS, we are left with 16 types of spatial filter, per ppant. 
+job.concatLiketrialsperppant=1; %also performs RESS, we are left with RESS filters per freq per ppant.
 
 % job.applyRESSpertrialtype=1; %after constructing RESS filters in the previous step, here we apply to all relevant trials, 
 % %also reduces the size of the 
+
+
+
+
+  
+% SET UP RESS params.
+
+peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!
+
+
+
 
 %set up directories and dependencies.
 getelocs;
@@ -57,10 +68,7 @@ onsetc = ceil(epochdur)/2;
 if job.concatLiketrialsperppant==1
     
     
-    
-    % SET UP RESS params.
-
-    peakfreqsare=[5,15,20,30, 35, 40,45, 60];
+  
     
     neighbour=[];
     for ihz = 1:length(peakfreqsare)
@@ -68,10 +76,10 @@ if job.concatLiketrialsperppant==1
         hzAT = peakfreqsare(ihz);
         
         %needs to be narrow to avoid other stim freqs.  
-    neighbour(ihz).centrefreqs=[hzAT-1 , hzAT+1];   % a low and high centre freq for covR
-    neighbour(ihz).sd=[.5, .5]; %FWHM of those...
-    neighbour(ihz).snrlow = [hzAT-1.5 hzAT-.5];    %not so important, were being used in SNR calcs. now in a laterscript
-    neighbour(ihz).snrhigh = [hzAT+.5 hzAT+1.5];
+    neighbour(ihz).centrefreqs=[hzAT-3 , hzAT+3];   % a low and high centre freq for covR
+    neighbour(ihz).sd=[1, 1]; %FWHM of those...
+%     neighbour(ihz).snrlow = [hzAT-1.5 hzAT-.5];    %not so important, were being used in SNR calcs. now in a laterscript
+%     neighbour(ihz).snrhigh = [hzAT+.5 hzAT+1.5];
     
     
     end
@@ -85,7 +93,7 @@ if job.concatLiketrialsperppant==1
     usechans=[1:64]; %occipital
     
     
-    for ifol =allppants
+    for ifol =allppants(5)%:end)
         
         
         %%
@@ -99,13 +107,7 @@ if job.concatLiketrialsperppant==1
         
         
         %%
-        
-        ressEVEC_byHz = zeros(length(peakfreqsare), length(usechans));
-        ressEVEC_byHz_MAPS=zeros(length(peakfreqsare),length(usechans));
-        
-        for ifreq=1:length(peakfreqsare)
-            
-            
+       
                 % collect relevant trials for each type of spatial
                 % configuration/filter construction.
               
@@ -187,29 +189,37 @@ if job.concatLiketrialsperppant==1
                         tmp(1,:,:)= datast;
                         datast=tmp;
                     end
-                    datastSD = nanstd(squeeze(nanmean(datast,2)),0,2);
-                    datastSDchan = nanmean(nanstd(datast,0 ,3),1);
-                    %remove those with 2.5*std from mean.
-                    trialSD=nanstd(datastSD);
+                    %SD per trial
+                    datastSD = std(squeeze(mean(datast,2)),0,2);
+                    %SD per chan.
+                    datastSDchan = mean(std(datast,0 ,3),1);
+                    
+                    %remove those with 2.5*std from mean.                    
                     mSD=nanmean(datastSD);
-                    keeptrials=1:size(datast,1);
+                    trialSD=nanstd(datastSD);                    
                     
                     %remove the trials with excessive noise.
-%                     badtrials=find(datastSD>mSD+2.5*trialSD)';
-%                     badtrials=find(datastSD>mSD)';
-                    badtrials = find(datastSD>100)';
+                    badtrials=find(datastSD>mSD+2.5*trialSD)';
+                                        
                     % also skip the trials which were only transient button
                     % presses. (less than one second).                    
                     shorttrials = find(durscheck<60);
-                    badtrials = [badtrials, shorttrials];
+                    
+                    %also find out if there were any nan!
+                    nantrials = find(isnan(datastSD))';
+                    
+                    
+                    
+                    allbadtrials = [badtrials, shorttrials,nantrials];
                     
                     % remove these from consideration.
-                    keeptrials(badtrials)=[];
+                    keeptrials=1:size(datast,1);                    
+                    keeptrials(allbadtrials)=[];
                     datast=datast(keeptrials,:,:);
                     
                     %sanity check this is clean data:
-                    figure(1); subplot(211); plot(squeeze(datast(:,62,:))');
-                    subplot(212); topoplot(datastSDchan, elocs(1:64)); c=colorbar; ylabel(c, 'SD');
+%                     figure(1); subplot(211); plot(squeeze(datast(:,62,:))');
+%                     subplot(212); topoplot(datastSDchan, elocs(1:64)); c=colorbar; ylabel(c, 'SD');
                     %shows how noisy the channels are!
                     
                     
@@ -241,32 +251,41 @@ if job.concatLiketrialsperppant==1
                 % trials as last dimension
                 %%
                 ressd=permute(dataOUT,[2 3 1]);
-                peakfreq1= peakfreqsare(ifreq);
                 
-                
-                
-                [ressEVEC, ~, ~, ressMAPS, hz]= constrRESSacrosstrials_willsData(ressd, peakfreq1, usechans, neighbour, window,srate);
-                
-                %
-                
-                % now we can multiple each type of data by the appropriate
-                %                 % ressEVEC
-    
-                figure(ifol); subplot(2,4,ifreq)
-                
-                topoplot(ressMAPS, elocs(usechans));
-title(num2str(peakfreq1));
-                %%
-                ressEVEC_byHz(ifreq,:) = ressEVEC;
-                ressEVEC_byHz_MAPS(ifreq,:)= ressMAPS;
-            
-            
-            
-        end
+                 
+                ressEVEC_byHz = zeros(length(peakfreqsare), length(usechans));
+                ressEVEC_byHz_MAPS=zeros(length(peakfreqsare),length(usechans));
+                clf
+                for ifreq=1:length(peakfreqsare)
+                    
+                    
+                    
+                    [ressEVEC, ~, ~, ressMAPS, hz]= constrRESSacrosstrials_willsData(ressd, peakfreqsare, usechans, neighbour, window,srate, ifreq);
+                    
+                    %
+                    
+                    % now we can multiple each type of data by the appropriate
+                    %                 % ressEVEC
+                    %%
+                    figure(ifol); subplot(2,5,ifreq)
+                    peakfreq1=peakfreqsare(ifreq);
+                    topoplot(ressMAPS, elocs(usechans));
+                    title(num2str(num2str(peakfreq1)));
+                    %%
+                    ressEVEC_byHz(ifreq,:) = ressEVEC;
+                    ressEVEC_byHz_MAPS(ifreq,:)= ressMAPS;
+                    
+                    
+                    
+                end
         
             savename='RESSfilterdata';
         
-        save(savename, 'ressEVEC_byHz', 'ressEVEC_byHz_MAPS', 'usechans', 'neighbour', 'windowsmall')
+        
+        save(savename, 'ressEVEC_byHz', 'ressEVEC_byHz_MAPS', 'usechans', 'neighbour', 'windowsmall', 'peakfreqsare')
+        cd([basefol filesep 'Figures' filesep 'RESS filters per participant'])
+        suptitle(['Participant ' num2str(ifol) ])
+        print('-dpng', ['RESS filters for  ppant ' num2str(ifol)]);
         disp(['fin for ppant' num2str(ifol)])
     end
 end

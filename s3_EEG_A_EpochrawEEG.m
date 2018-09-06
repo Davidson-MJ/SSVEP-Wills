@@ -4,9 +4,10 @@
 cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/EEG Will SSVEP Data 01')
 basefol=pwd;
 pdirs=dir([pwd filesep '*_*' 'EEG']);
-
+%load channel data.
+getelocs;
 %%
-for ippant = 1:19
+for ippant = 1:14
     %%
     
     cd(basefol)
@@ -24,11 +25,9 @@ for ieeg = 1:length(allEEG)
     loadfile = allEEG(ieeg).name;
     
     EEG= pop_loadbv(pwd, num2str(loadfile));
-    
-    eegchans = EEG.data(1:64,:);
-    
-    Timing = (1:length(eegchans))/EEG.srate; %in seconds.
-    %%
+    % replace channel data
+    EEG.chanlocs = elocs(1:64);
+ 
     trialend = [];
     trialstart = [];
     for ievent = 1:length(EEG.event)
@@ -40,19 +39,51 @@ for ieeg = 1:length(allEEG)
             trialend =  [trialend EEG.event(ievent).latency];
         end
     end
-%     trialstart = trialend - (60*EEG.srate); %60 second trials
-%     adjustedcatch = catchinfo-trialstart;
-    
+    if length(trialstart)<length(trialend);
+    trialstart = trialend - (60*EEG.srate); %60 second trials
+    end
+   % interpolate bad channels in data set.
+ 
+   %reduce data size
    
+   EEG.data = EEG.data(:,abs(trialstart(1)):trialend(end)+1);
+      
+% identify and interp bad channels using var methods:
+%% modified from prepPipeline: Bigdely-Shamo et al., Frontiers 2015
+tic
+noisyOut=findNoisyChannels(EEG);
+toc
+% because we have SSVEPs, only remove those with deviations (not low
+% channel correlation - as a localized responsed could be due to the entrainment).
+%% 
+badchans = [noisyOut.noisyChannels.badChannelsFromDeviation, noisyOut.noisyChannels.badChannelsFromDropOuts];
+
+EEG= eeg_interp(EEG, badchans);
+
+%sanity check plot
+% clf;
+% subplot(121); topoplot(std(EEG.data,0,2), elocs(1:64)); colorbar;
+% subplot(122); topoplot(std(EEGn.data,0,2), elocs(1:64)); colorbar;
+%%
+
+    eegchans = EEG.data(1:64,:);
+    
+    Timing = (1:length(eegchans))/EEG.srate; %in seconds.
+    %%
     %% Now epoch
     EpochedEEG=zeros(length(trialstart), 64, 60*EEG.srate+1); %60 seconds trials.
+    
+    %adjust for our shorter windows (since we reduced above, pre chan
+    %rejection).
+    trialend=trialend - abs(trialstart(1));
+    trialstart=trialstart-abs(trialstart(1))+1;
     
     for itrial = 1:length(trialstart)
         
         %beware negatives
         if trialstart(itrial)<0
             %supplement with NaN in duration effected
-            trial= EEG.data(:, 1:trialend(itrial));
+            trial= EEG.data(:, 1:trialend(itrial)+1);
             nantrain = nan(1,abs(trialstart(itrial))+1);
             newd= zeros(64,60*EEG.srate+1);
             for ichan=1:64
@@ -62,8 +93,8 @@ for ieeg = 1:length(allEEG)
             
             EpochedEEG(itrial,:,:) = newd;
         else
-            trial= EEG.data(:, trialstart(itrial):trialend(itrial));
-            EpochedEEG(itrial,:,:) = trial;
+            trial= EEG.data(:, trialstart(itrial):trialend(itrial)+1);
+            EpochedEEG(itrial,:,:) = trial(:, 1:size(EpochedEEG,3));
         end
     end
     
@@ -88,6 +119,9 @@ end
    end
    savename =  ['P' num2str(ippant) 'RawEEG'];
     save(savename, 'EpochedEEGdata')
-    clearvars -except basefol pdirs
+    
+    disp(['fin ppant ' num2str(ippant) ])
+    clearvars -except basefol pdirs elocs
+%     print('-dpng', 'interpolated channels')
 %     save(['P' num2str(ippant) 'Trigger_Catch_Timing'], 'allcatchEEG')
 end

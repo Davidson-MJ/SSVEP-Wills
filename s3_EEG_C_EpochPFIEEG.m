@@ -37,8 +37,9 @@ job.concaterpdataacrossppants_keepnumberSeparate=0; %concats for sep num PFI, ba
 job.concatTOPOTIMEacrossppants=0;
 job.plotTOPOtimeacrossppants=0; %%%%%%%%%%% use this to plot spatial correlation over time also (see job2 within).
 
+%%%%%%%
 job.BPandSSVEPtimecourseacrossppants=1; %this uses all/any PFI. (any duration, any number).
-
+%%%%%%%
 job.SSVEPtimecourseSelectchans=0; %combines across certain channels.
 
 job.FirstSIGintimecourse=0; %this uses all/any PFI. (any duration, any number).
@@ -641,17 +642,27 @@ if job.erpimagePFIusingSNR==1
     exclTransientBP=30;
     
     %%
-    for ifol = allppants
-        for hzis=1:4
+    for ifol = 1%allppants
+        for hzis=[1,2,3,4,7,8]
             switch hzis
                 case 1
-                    usehz=15;
+                    usehz=15; %
                 case 2
                     usehz=20;
-                    case 3
+                case 3
                     usehz=30;
                 case 4
                     usehz=40;
+                case 5
+                    usehz=45;
+                case 6
+                    usehz=60;
+                case 7
+                    usehz= 5;
+                case 8
+                    usehz = 25;
+                case 9
+                    usehz= 35;
             end
             
             
@@ -948,16 +959,8 @@ if job.erpimagePFIusingSNR==1
             
             
             %%
-            switch hzis
-                case 1
-                    savename='PFIperformance_withSNR_15';
-                case 2
-                    savename='PFIperformance_withSNR_20';
-                    case 3
-                    savename='PFIperformance_withSNR_30';
-                    case 4
-                        savename='PFIperformance_withSNR_40';
-            end
+            savename=['PFIperformance_withSNR_' num2str(usehz)];
+            
             cd(basefol)
             cd('EEG')            
             cd(dirs(ifol).name)
@@ -2415,7 +2418,9 @@ if job.BPandSSVEPtimecourseacrossppants==1
     legendnames=[];
     ttestdata=[];
     lc=1;
-    for hzis=1:3%
+    
+    
+    for hzis=1:2%
         cd([basefol filesep 'EEG'])
         switch hzis
             case 1
@@ -2434,7 +2439,7 @@ if job.BPandSSVEPtimecourseacrossppants==1
                 load('GFX_PFIperformance_withSNR_20_min0')
                 
                 lint=':';
-                usehz=0;
+                usehz=20;
                 sigheight=2;
                 if rmvbase==1
 %                     sigheight=-3.7;

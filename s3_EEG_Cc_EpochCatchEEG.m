@@ -15,7 +15,7 @@ dbstop if error
 
 job.sortTrialindicesbyFreqandLocation=0; %store relevant catch/target loc data.
 
-job.EpochperppantCATCH=0; %Epoch each participants Catch windows
+job.EpochperppantCATCH=1; %Epoch each participants Catch windows
 %also stores the BP trace for next job.
 
 
@@ -25,7 +25,7 @@ job.erpimageCATCHusingSNR=0; % saves at ppant level.
 job.concaterpdataacrossppants=0;
 
 job.erpimageacrossppants=0;
-job.BPandSSVEPtimecourseacrossppants=1;
+job.BPandSSVEPtimecourseacrossppants=0;
 
 
 % job.calcRESSforcatchtrials=1; % also performs a baseline removal.
@@ -76,7 +76,7 @@ if job.sortTrialindicesbyFreqandLocation==1
         %save in  EEG folder since that's where we will use it.
         cd([basefol filesep 'EEG'])
         pdirs = dir([pwd filesep '*_*' 'EEG']);
-        for ifol=1:19
+        for ifol=1%:19
             
             cd([basefol filesep 'EEG'])
             %redirect to ppant folder.
