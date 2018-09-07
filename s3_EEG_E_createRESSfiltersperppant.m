@@ -93,7 +93,7 @@ if job.concatLiketrialsperppant==1
     usechans=[1:64]; %occipital
     
     
-    for ifol =allppants(5)%:end)
+    for ifol =allppants(5:end)
         
         
         %%

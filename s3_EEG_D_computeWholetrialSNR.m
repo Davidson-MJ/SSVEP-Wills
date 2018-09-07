@@ -60,6 +60,7 @@ for ippant = 1:length(allppants)
     save('WholetrialmSNR_chanXfreq', 'pSNR', 'f')
     
     acrossPPSNR(counter,:,:)=pSNR;
+    counter=counter+1;
 end
 cd(basefol)
 save('GFX_rawSNR_static_wholetrial', 'acrossPPSNR', 'f')
@@ -69,6 +70,7 @@ if job.plotacrossppants==1
     %%
     cd(basefol)
     load('GFX_rawSNR_static_wholetrial');
+    %%
     cd ../
     cd('Figures')
     cd('SNR spectrum')
@@ -78,14 +80,15 @@ if job.plotacrossppants==1
     mSNRchan=squeeze(mean(acrossPPSNR(:,62,:),1));
     plot(f, mSNRchan)
     hold on
-    cols={'r', 'k', 'r', 'k', 'm','m', 'r', 'r', 'k','m'};
+    cols={'r', 'k', 'r', 'k', 'm','m', 'r', 'r', 'k','m','r'};
     counter=1;
     p=[];
-        for ifreq=[15,20,30,40,5,35, 45,60,80, 25]
+        for ifreq=[15,20,30,40,5,35, 45,60,80, 25, 75]
             [~,usef]= min(abs(f-ifreq));
             yis= mSNRchan(usef);
             xis= f(usef);
-           p(counter)=plot(xis, yis, 'o', 'linew', 2, 'color', cols{counter}) ;
+           p(counter)=plot(xis, yis, 'o', 'linew', 5, 'color', cols{counter}) ;
+%            p(counter)=text(xis, yis, 'o', 'fontsize', 25, 'color', cols{counter}) ;
            
            if ifreq==60
                p(counter)=plot(xis, yis, 'o', 'markersize', 15,'linew', 2, 'color', 'k') ;
@@ -93,13 +96,16 @@ if job.plotacrossppants==1
             counter=counter+1;
             
         end
-        legend([p(1), p(2), p(5)], {'TG Hz', 'BG Hz', 'im'})
+        %%
+        legend([p(1), p(2), p(5)], {'Target flicker', 'Background flicker', 'Intermodulation'})
         axis tight
         xlabel('Frequency (Hz)')
-        ylabel('logSNR')
+        ylabel('log(SNR)')
         set(gcf, 'color', 'w')
         set(gca, 'fontsize', 25)
-        ylim([0 .4])
+%         ylim([0 .4])
+xlim([ 0 85])
+ylim([-1 6])
         %%
         print('-dpng', 'Whole trial SNR, chan POz')
         %%
@@ -110,20 +116,31 @@ if job.plotacrossppants==1
     %%
     %topos first.
     getelocs;
+    %%
     counter=1;
     mTOPOs = squeeze(mean(acrossPPSNR,1));
     clf
-    for ifreq=[15,30,20,40,5,25,35,60]
+     titles={'(TG) f1', '(TG) 2f1', '(TG) 3f1',...
+        '(BG) f2', '(BG) 2f2', '(BG) 3f2',...
+        '(IM) f2-f1', '(IM) 2f2-f1', '(IM) f1 +f2'};
+    for ifreq=[15,30,45,20,40,60,5,25,35]
         
         [~,usef]= min(abs(f-ifreq));
-        subplot(2,4,counter)
+        subplot(3,3,counter)
         
+        plotme=squeeze(mTOPOs(:,usef));
         topoplot(squeeze(mTOPOs(:,usef)), elocs(1:64))
         c=colorbar;
-        caxis([0 .2])
-        title([num2str(ifreq) ' Hz'])
+        cm=round(max(plotme));
+        if cm<1
+            cm=1;
+        end
+        caxis([0 cm])
+%         title([num2str(ifreq) ' Hz'])
+title(titles{counter})
         set(gca, 'fontsize', 25)
         counter=counter+1;
+       ylabel(c,'log(SNR)')
     end
     %%
     set(gcf, 'color', 'w')
