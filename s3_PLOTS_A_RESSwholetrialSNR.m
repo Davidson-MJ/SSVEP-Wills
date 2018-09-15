@@ -81,4 +81,3 @@ basefol=pwd;
     print('-dpng', 'Topos across all, SNR preRESS, whole trial')
     %%
     
-end

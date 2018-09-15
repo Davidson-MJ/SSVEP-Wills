@@ -27,21 +27,22 @@ load('Catchperformance.mat')
 
 fontsize=25;
 
-job.removeCatchperiodsfromBPtrace=0;
+job.removeCatchperiodsfromBPtrace=1;
 
 %Three types of analysis (IVs( RMfactors)). Number absent, location absent, and flicker
 %speed.
-job.calcPFIdataperNum=0; %resaves into PFI_only with new fields in structure..
-job.calcPFIdataperFreqandLoc=0; %resaves into PFI_only with new fields in structure..
+job.calcPFIdataperNum=1; %resaves into PFI_only with new fields in structure..
+job.calcPFIdataperFreqandLoc=1; %resaves into PFI_only with new fields in structure..
 
 
 
-job.concatPFIacrossPpants_num=0;
-job.concatPFIacrossPpants_byLoc=0;
-job.createShufflePFIdata_pernum=0;
-job.calcPFIdataperNum_shuffled=0;
-job.concatPFIacrossPpants_num_shuffled=0;
+job.concatPFIacrossPpants_num=1;
+job.concatPFIacrossPpants_byLoc=1;
+job.createShufflePFIdata_pernum=1;
+job.calcPFIdataperNum_shuffled=1;
+job.concatPFIacrossPpants_num_shuffled=1;
 %
+
 job.concatPFIacrossPpants_slope_nulldistribution=0;
 
 
@@ -57,7 +58,7 @@ job.LMEnPFIwShuff=0;
 
 
 %plot the results for PFI, in separate bar graphs.
-job.plotBehaviouraldata=1;
+job.plotBehaviouraldata=0;
 job.plotBehaviouraldata_num_with_shuffled=1;
 
 
@@ -400,10 +401,10 @@ if job.calcPFIdataperNum==1
                     %not transients.
                     durDisap = sum(ddurs(keep));
                     nPFI=length(keep);
-                    alldurs = ddurs(keep)
+                    alldurs = ddurs(keep);
                     
-                    frame_begs = frame_begin(keep)
-                    frame_ends = frame_end(keep)
+                    frame_begs = frame_begin(keep);
+                    frame_ends = frame_end(keep);
                     %store
                     switch in
                         case 1
@@ -1233,7 +1234,7 @@ if job.plotBehaviouraldata ==1
    %%
     icounter=1;
     clf
-    for iIV=2%1:2
+    for iIV=3%1:2
         switch iIV
             case 1 %look at frequency of target flicker
                 p1= Freq_FreqPFI_acrossTrials;
@@ -1304,7 +1305,7 @@ if job.plotBehaviouraldata ==1
             stErr = std(NEWdata)/sqrt(size(datanow,1));
             
             %
-            if iIV==1
+            if iIV~=2
             bh=bar(mData);
             bh(1).FaceColor= [.5 .5 .9];
             
