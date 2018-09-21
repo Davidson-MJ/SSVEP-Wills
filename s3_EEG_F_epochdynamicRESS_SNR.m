@@ -16,13 +16,13 @@ dbstop if error
 %%
 
 
-job.calcppantDYNSNRperfreq=0; %sorts by hz x location. %topos in preivous script (s3_Da)
+job.calcppantDYNSNRperfreq=1; %sorts by hz x location. %topos in preivous script (s3_Da)
 
-appendtradSNRtoDYN=0; % runs through the above, but performs traditional SNR on RESStimecourse for comparison.
+appendtradSNRtoDYN=1; % runs through the above, but performs traditional SNR on RESStimecourse for comparison.
 
 
 
-job.concatacrossppanst=0;
+job.concatacrossppanst=1;
 
 job.plot_dynSSEP_acrossppants=1;
 
@@ -106,7 +106,7 @@ if job.calcppantDYNSNRperfreq==1
         %%
         
         RESS_dynamicSNR_byTYPExHz=nan(10,length(peakfreqsare),1501);
-        RESS_traditionalSNR_byTYPExHz=nan(10,length(peakfreqsare),33);
+        RESS_traditionalSNR_byTYPExHz=nan(10,length(peakfreqsare),24);
         
         
         for ifreq=1:length(peakfreqsare)
@@ -340,9 +340,9 @@ if job.calcppantDYNSNRperfreq==1
                             param_spcgrm.Fs= [250];
                             param_spcgrm.Fpass= [0 50];
                             param_spcgrm.trialave=0;
-                            param_spcgrm.pad = 1;
+                            param_spcgrm.pad = 2;
                             
-                            movingwin=[1,.15];
+                            movingwin=[2.5,.15];
                             
 %                             if ifreq==7
 %                                 pause
@@ -352,41 +352,52 @@ if job.calcppantDYNSNRperfreq==1
                             %conv SNR
                             snr_sgrm =zeros(size(sgrm));
                             
+                            %adjust for HBW
+                            k = ((param_spcgrm.tapers(1,1)));%
+                            hbw = (k+1)./ (2.*[movingwin(1,1)]);
+                            neighb = 2; %hz
                             
-                            % note, for 5 hz, this is likely too large
-                            kernelw= [-1/4 -1/4  0 0 1 0 0 -1/4 -1/4 ];
-                            
-                        % snr onaverage
-                        
-                        
-                        % can also interpolate
-                        
-                        
-                        %compute SNR
-                        
-                                tmps= squeeze(nanmean(sgrm,3));
+                            %space out kernel appropriately
+                            distz = dsearchn(fgrm', [hbw, neighb, neighb*2+hbw]');
+                   
+tmps= squeeze(nanmean(sgrm,3));
                                 
                                 
-                                
-                                snr_sgrm=[];
-                                for itime= 1:size(tmps,1)
-                                    checkput = conv(log(tmps(itime,:)), kernelw,'same');
-                                    if ~isreal(checkput)
-                                        snr_sgrm(itime,:)= nan(1, size(tmps,2));
-                                    else
-                                        snr_sgrm(itime,:)= conv(log(tmps(itime,:)), kernelw,'same');
-                                    end
-                                end
+%                                 % SNR by convolution.
+%                                 snr_sgrm=[];
+%                                 for itime= 1:size(tmps,1)
+%                                     checkput = conv(log(tmps(itime,:)), kernelw,'same');
+%                                     if ~isreal(checkput)
+%                                         snr_sgrm(itime,:)= nan(1, size(tmps,2));
+%                                     else
+%                                         snr_sgrm(itime,:)= conv(log(tmps(itime,:)), kernelw,'same');
+%                                     end
+%                                 end
+
+
+
+% loop over frequencies and compute SNR
+numbins = distz(2); 
+skipbins = distz(1);
+snr_sgrm= zeros(size(tmps));
+for itime=1:size(tmps,1)
+    for hzi=numbins+1:length(fgrm)-numbins-1
+        numer = tmps(itime,hzi);
+        denom = nanmean( tmps(itime,[hzi-numbins:hzi-skipbins hzi+skipbins:hzi+numbins]) );
+        snr_sgrm(itime,hzi) = numer./denom;
+        
+    end
+end
                                 %% sanitycheck
-                                subplot(211)
-                                imagesc(tgrm,fgrm, log(tmps)')
-                                ylim([0 50])
-                                subplot(212)
-                                imagesc(tgrm, fgrm, snr_sgrm')
-                                ylim([0 50])
-%                                 ylim([0 10])
-                                c=colorbar;
-                                caxis([0 2]);
+%                                 subplot(211)
+%                                 imagesc(tgrm,fgrm, log(tmps)')
+%                                 ylim([0 50])
+%                                 subplot(212)
+%                                 imagesc(tgrm, fgrm, snr_sgrm')
+%                                 ylim([0 50])
+% %                                 ylim([0 10])
+%                                 c=colorbar;
+%                                 caxis([0 2]);
                                 
                                 %%
                                 
@@ -445,7 +456,7 @@ if job.concatacrossppanst==1
     %%
     
     acrossRESS_DYNSNR_freqs=zeros(length(allppants),12, length(peakfreqsare),1501);
-    acrossRESS_TRADSNR_freqs=zeros(length(allppants),12,  length(peakfreqsare),33);
+    acrossRESS_TRADSNR_freqs=zeros(length(allppants),12,  length(peakfreqsare),24);
 %     [nppants, ndims, nfreqs,nlocs,nsamps]=size(acrossRESS_DYNSNR_freqs);
     icounter=1;
     for ippant=allppants
@@ -470,22 +481,6 @@ end
 
 %%
 
-
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
- % yet to update from here on out
- %%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
-%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
 if job.plot_dynSSEP_acrossppants==1
     %%
     cd(basefol)
@@ -532,7 +527,7 @@ if job.plot_dynSSEP_acrossppants==1
     BPCatchONSET= 9;
     BPCatchOFFSET= 11;
     
-    checkcluster=0;
+    checkcluster=1;
     counter=1;
   
 pl=[];
@@ -549,14 +544,14 @@ legendPRINT={};
        %blue color for target, red for BG.
        hzcols={'b', 'r', 'b', 'r', 'b', 'm', 'k','k','k'};
        
-       for ihz=[9]%[2,3]%[1,4]%,4]%  2 3]% each HZ separately.
+       for ihz=[2]%[2,3]%[1,4]%,4]%  2 3]% each HZ separately.
         
         
           counter=1;
           
-          itypech=[1,2]; %used for indexing ttests
+          itypech=[5,6]; %used for indexing ttests
           
-          for itype=[5,6]%itypech
+          for itype=itypech
                 
     
             switch itype
@@ -572,7 +567,7 @@ locis='NorthEast';
                     mrks='-';
                     
                     %load BP data.
-                    
+                    lge='target disappear';
                     useBP=BPonPFI;
                 case 2
                     EVENTdata = squeeze(nanmean(usedata(:,PFIdecrease,:,:,:),2));
@@ -582,6 +577,7 @@ locis='NorthEast';
                     xlabelis = 'Time from target visible';                    
                     useBP=BPoffPFI;
                     mrks=':';
+                    lge='target reappear';
                 
 %                 case 3
 %                     EVENTdata = squeeze(nanmean(usedata(:,CatchONSET,:,:,:),2));
@@ -602,12 +598,15 @@ locis='NorthEast';
                     xlabelis = 'Time from reporting catch onset';
                     mrks='-';
                     useBP=BPoncatch;
+                                        lge='catch onset';
+
                 case 6
                     EVENTdata = squeeze(nanmean(usedata(:,BPCatchOFFSET,:,:,:),2));
                     col='r';
                     mrks=':';
                     chtype = {['Catch'];['Target Reappearance']};
                     xlabelis = 'Time from reporting catch offset';
+                    lge='catch offset';
                     
                     useBP=BPoffcatch;
             end
@@ -617,9 +616,16 @@ locis='NorthEast';
 % restrict to HZ of interest
                                         
                     plotd= squeeze(EVENTdata(:,ihz,:));
+%                     plotd=plotd-mean(plotd(:));
                     
-                    
-  
+switch ihz
+    case {1,3,5}
+        typesnr='Target SNR';
+    case {2,4,6}
+        typesnr= 'Background SNR';
+    case {7,8,9}
+        typesnr= 'Intermodulation SNR';
+end
 
 
 %to place on the same figure!
@@ -745,12 +751,18 @@ end
 %         ylim([-.05 .5])
         xlim([-2.5 2.5])
         
+        
+        legendPRINT = [legendPRINT {lge}];
           end            
        
           
           
           
- 
+    %
+    hold on; plot([0 0 ], ylim, ['k-'])
+set(gcf, 'color', 'w')
+% ylim([1.1 2.25])
+    xlim([timeid(1) timeid(end)])
           
           
           
@@ -759,10 +771,11 @@ end
           
           
           
-          
-%        lg=legend([pl(1) pl(2) ], legendPRINT);    
-%          set(lg, 'Location','NorthEastOutside', 'fontsize',18)
-        
+          try lg=legend([pl(itypech(1)) pl(itypech(2)) ], legendPRINT);    
+         set(lg, 'Location','SouthEast', 'fontsize',18)
+          catch
+          end
+        title([typesnr ])
 %      check for significance from zero
 %check for sig
 %         pvals=zeros(1,size(ttestdata,3));
@@ -773,7 +786,7 @@ if checkcluster==1
             try [h,pvals(itime),~,stat]=ttest(ttestdata(itypech(1),:,itime), ttestdata(itypech(2),:,itime));
                 shuffType=1;
             catch
-                [h,pvals(itime),~,stat]=ttest(ttestdata(ihz,:,itime)); %compares to zero.
+                [h,pvals(itime),~,stat]=ttest(ttestdata(itype,:,itime)); %compares to zero.
                 shuffType=2; %whether or not to skip the non-parametric test for sig.
             end
             
@@ -783,7 +796,7 @@ if checkcluster==1
 
 %         sigs=[];
 %             %perform cluster based correction.
-            if length(sigs)>2
+            if length(sigs)>0
                 % find biggest cluster:
                 %finds adjacent time points
                 vect1 = diff(sigs);
@@ -916,8 +929,10 @@ if checkcluster==1
                         for itime=tryt
                             figure(useTRADorDYNSNR);
                             hold on
+                            ystretch=get(gca, 'ylim');
+                            sigheight= (ystretch(1) + ((ystretch(2)-ystretch(1))*.1)); 
 %                             plot(timeid(itime), sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', sh.mainLine.Color)
-                            plot(timeid(itime), sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', col)
+                            plot(timeid(itime), [sigheight], ['*' ],'markersize', 15, 'linewidth', 3, 'color', col)
                         end
                     end
             
@@ -949,13 +964,29 @@ cd('Figures')
 
 % cd('"X" over time')
 
-print('-dpng', ['Dynamic SSVEP during report PFI TG 2nd harm'])
+% print('-dpng', ['Dynamic SSVEP during report PFI TG 2nd harm'])
 %     print('-dpng', ['Dynamic SSVEP during CATCH_BG.png'])
 
 %     print('-dpng', ['Dynamic SSVEP during PFI_BG.png'])
 end
 
 
+
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+ % yet to update from here on out
+ %%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
+%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %%%% % % %%  %
 
 if job.calcPpantDYNSSVEP_crosspoint==1
     

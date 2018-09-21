@@ -4,23 +4,16 @@
 %all targets are present/ away from Catch stimulus onset.
 
 
-
 clear all
-try cd('/Users/MattDavidson/Desktop/FromIrenes Mac/Real_Experiment/Data Experiment copy')
-catch
-    cd('/Users/MatthewDavidson/Desktop/FromIrenes Mac/Data Experiment copy')
-end
-
+addpath('/Users/MattDavidson/Desktop/SSVEP-feedbackproject')
+cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
 basefol=pwd;
-clearvars -except basefol allppants
-dbstop if error
-
-
-
+pdirs = dir([pwd filesep '* EEG']);
+%%
 
 job.calcppantSNRperfreq=0; %sorts by hz x location. %topos in preivous script (s3_Da)
-job.calcppantSNRperfreq_2fTG=0; %appends for 2fTGs/
-job.concatacrossppanst=0;
+
+job.concatacrossppanst=1;
 job.plotHzsacrossppants=1; % this is averaging across all periods (excluding catch).
 
 job.compareHzxLocations_bar=0;
@@ -28,13 +21,15 @@ job.compareHzxLocations_bar=0;
 getelocs;
 
 cd(basefol)
-cd('newplots-MD')
+
+
+peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!   
+
+%remaining participants after behavioral data analysis/exclusion
+allppants=[1,2,4,6,9:16,18]; %
 %% load data to determine physical catch timing.
 
 %remaining participants after behavioral data analysis/exclusion
-allppants=1:29;
-badppants = [8, 15,28, 4 , 7,5 6,10];
-allppants(badppants)=[];
 
 % window=[-2 4];
 window=[-3 3];
@@ -66,48 +61,36 @@ if job.calcppantSNRperfreq==1
     
     param_spctrm.tapers = [1 1];
     param_spctrm.Fs= [250];
-    param_spctrm.fpass= [0 50];
+    param_spctrm.fpass= [0 65];
     param_spctrm.trialave=0;
+    param_spctrm.pad=2; %padding for detecting 5 Hz.
+    
     for ifol =allppants
         
         
         %%
         cd(basefol)
-        cd(num2str(ifol))
+        cd(pdirs(ifol).name)
         
         
         %% load the relevant PFI data.
         load('ppant_PFI_Epoched_RESS');
         load('ppant_Catch_Epoched_RESS')
         load('ppant_PFI_Epoched') %for info of types missing.
-        load('TrialIndicesbyLocationandHz.mat')
-        peakfreqsare=[8,13,15,18,20,40];
+%         load('TrialIndicesbyLocationandHz.mat')
+        
         %%
         
-        RESS_staticSNR_byHzxLoc=zeros(6,4,205);
-%         RESS_staticSNR_byHzxLoc=zeros(6,4,103);
+        RESS_staticSNR_byHz=zeros(length(peakfreqsare),1065);
+
 
         
-        for ifreq=1:6
+        for ifreq=1:length(peakfreqsare)
             
             
-            switch ifreq
-                case 1
-                    usehz=8;
-                case 2
-                    usehz=13;
-                case 3
-                    usehz=15;
-                case 4
-                    usehz=18;
-                case 5
-                    usehz=20;
-                case 6
-                    usehz=40;
-                    
-            end
+         usehz=peakfreqsare(ifreq);
             
-            for iloc=1:4
+            
                 
                 
                 
@@ -119,66 +102,74 @@ if job.calcppantSNRperfreq==1
                     
                     switch id
                         case 1
-                            dataIN=ress_PFI_0_1_HzxLoc;
-                            searchtrials = [Freqwas.dir0_1.Trialind];
-                            durscheck=durs0_1;
+                            dataIN=ress_PFI_0_1_Hz;
+                            
                             usewindow=1:2;
                         case 2
-                            dataIN=ress_PFI_1_0_HzxLoc;
-                            searchtrials = [Freqwas.dir1_0.Trialind];
-                            durscheck=durs1_0;
+                            dataIN=ress_PFI_1_0_Hz;
+                            
                             usewindow=1:2;
                         case 3
-                            dataIN=ress_PFI_1_2_HzxLoc;
-                            searchtrials = [Freqwas.dir1_2.Trialind];
-                            durscheck=durs1_2;
+                            dataIN=ress_PFI_1_2_Hz;
+                            
                             usewindow=1:2;
                         case 4
-                            dataIN=ress_PFI_2_1_HzxLoc;
-                            searchtrials = [Freqwas.dir2_1.Trialind];
-                            durscheck=durs2_1;
+                            dataIN=ress_PFI_2_1_Hz;
+                            
                             usewindow=1:2;
                         case 5
-                            dataIN=ress_PFI_3_2_HzxLoc;
-                            searchtrials = [Freqwas.dir3_2.Trialind];
-                            durscheck=durs3_2;
+                            dataIN=ress_PFI_3_2_Hz;
+                            
                             usewindow=1:2;
                         case 6
-                            dataIN=ress_PFI_2_3_HzxLoc;
-                            searchtrials = [Freqwas.dir2_3.Trialind];
-                            durscheck=durs2_3;
-                            usewindow=1:2;
+                            dataIN=ress_PFI_2_3_Hz;
+                            
+                            usewindow=1:2;                                                       
+                            
+                            
                         case 7
+                            
+                            dataIN=ress_PFI_3_4_Hz;
+                            
+                            usewindow=1:2;                                                       
+                        case 8
+                            
+                            dataIN=ress_PFI_4_3_Hz;
+                            
+                            usewindow=1:2;                                                       
+                            
+                        case 9
                             dataIN=ress_BPcatchonsetTGs;
                             
                             usewindow=1;
-                        case 8
+                        case 10
                             dataIN=ress_BPcatchonsetBGs;
                             
                             usewindow=1;
-                        case 9
+                        case 11
                             dataIN=ress_catchonsetTGs;
                             
                             usewindow=1;
-                        case 10
+                        case 12
                             dataIN=ress_catchonsetBGs;
                             
                             usewindow=1;
-                        case 11
+                        case 13
                             dataIN=ress_catchoffsetTGs;
                             
                             usewindow=2;
                             
-                        case 12
+                        case 14
                             dataIN=ress_catchoffsetBGs;                            
                             usewindow=2;
                             
-                        case 13
+                        case 15
                             dataIN=ress_BPcatchoffsetTGs;                            
                             usewindow=2;
-                        case 14
+                        case 16
                             dataIN=ress_BPcatchoffsetBGs;                            
                             usewindow=2;
+                            
                             
                     end
                     
@@ -195,13 +186,23 @@ if job.calcppantSNRperfreq==1
                         
                         
                         %reduce size. 
-                        if id<7
-                            datanow=squeeze(dataIN(ifreq,iloc).ressTS);
+                        if id<9
+                            datanow=squeeze(dataIN(ifreq).ressTS);
                             
                         datast= squeeze(datanow(:,tidx(1):tidx(2)));
                         else %catch trials
+                            if ifreq<7 %TG or BG
+                                
+                                if mod(ifreq,2)==0 %BG hz
+                                    usehztmp = ifreq/2;
+                                elseif mod(ifreq,2)~=0% TG hz
+                                    usehztmp= ceil(ifreq/2);
+                                end
+                            elseif ifreq>=7
+                                usehztmp = ifreq-6;
+                            end
+                            datast= squeeze(dataIN(usehztmp,:,tidx(1):tidx(2)));
                             
-                            datast= squeeze(dataIN(ifreq,iloc,:,tidx(1):tidx(2)));
                         end
                         
                         %% check for bad trials (noisy)
@@ -212,22 +213,22 @@ if job.calcppantSNRperfreq==1
 %                         %remove those with 2.5*std from mean.
 %                         trialSD=nanstd(datastSD);
 %                         mSD=nanmean(datastSD);
-                        keeptrials=1:size(datast,1);
-%                         
+keeptrials=1:size(datast,1);
+%
 %                         %remove the trials with excessive noise.
 badtrials=[];
 %                         badtrials=find(datastSD>mSD+2.5*trialSD)';
-%                         
+%
 %                         % also skip the trials which were only transient button
 %                         % presses. (less than one second).
-                        shorttrials=[]; 
-%                         
+shorttrials=[];
+%
 %                         %also remove NANs:
-                        nantrials = find(isnan(datast(:,1)));
-                        zerotrials= find(datast(:,1)==0);
-                        badtrials = [badtrials, shorttrials, nantrials', zerotrials'];
-%                         
-%                         
+nantrials = find(isnan(datast(:,1)));
+zerotrials= find(datast(:,1)==0);
+badtrials = [badtrials, shorttrials, nantrials', zerotrials'];
+%
+%
 %                         % remove these from consideration.
 if sum(badtrials)>0
     keeptrials(badtrials)=[];
@@ -270,8 +271,9 @@ end
                     sMEAN = squeeze(nanmean(log(s),2));
                     
                     %% comp SNR;
+                    kernelw = [-1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24   0 0 1  0 0 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 -1/24 ];
 %                     kernelw = [-1/6 -1/6 -1/6   0 0 1  0 0 -1/6  -1/6 -1/6];
-                    kernelw = [-1/4 -1/4 0 0 1  0 0 -1/4  -1/4 ];
+%                     kernelw = [-1/4 -1/4 0 0 1  0 0 -1/4  -1/4 ];
                     %                 
 %                     %take mean
                     sNOW= conv(sMEAN, kernelw, 'same');
@@ -283,250 +285,13 @@ end
             %%
             
             
-            RESS_staticSNR_byHzxLoc(ifreq,iloc,:) = sNOW; %channs x hz
+            RESS_staticSNR_byHz(ifreq,:) = sNOW; %channs x hz
             
-            end
+            
         end
         
         
-        save('RESS_statSNR', 'RESS_staticSNR_byHzxLoc', 'f', 'kernelw')
-    end
-    
-end
-
-if job.calcppantSNRperfreq_2fTG==1
-    %Collect all DATA
-    %%
-    windowsmall=[];
-    windowsmall(1,:) = [-3 -.1] ;%  window targets present
-    windowsmall(2,:) = [.1 3] ;%  window targets present after BP
-%     windowsmall(1,:) = [-3 -1] ;%  window targets present
-%     windowsmall(2,:) = [1 3] ;%  window targets present after BP
-    %%
-    
-    
-    param_spctrm.tapers = [1 1];
-    param_spctrm.Fs= [250];
-    param_spctrm.fpass= [0 50];
-    param_spctrm.trialave=0;
-    for ifol =allppants
-        
-        
-        %%
-        cd(basefol)
-        cd(num2str(ifol))
-        
-        
-        %% load the relevant PFI data.
-        load('ppant_PFI_Epoched_RESS_2fTG');
-        load('ppant_Catch_Epoched_RESS_2fTG')
-        load('ppant_PFI_Epoched') %for info of types missing.
-        load('TrialIndicesbyLocationandHz.mat')
-        peakfreqsare=[8,13,15,18,20,40];
-        %%
-        
-        RESS_staticSNR_byHzxLoc_2fTG=zeros(4,4,205);
-%         RESS_staticSNR_byHzxLoc=zeros(6,4,103);
-
-        
-        for ifreq=1:4
-            
-            
-            switch ifreq
-                case 1
-                    usehz=16;
-                case 2
-                    usehz=26;
-                case 3
-                    usehz=30;
-                case 4
-                    usehz=36;
-                
-            end
-            
-            for iloc=1:4
-                
-                
-                
-                % collect relevant trials for each type of spatial
-                % configuration/filter construction.
-                
-                %%
-                for id=1:14% Use all epochs so as not to bias condition comparisons.
-                    
-                    switch id
-                        case 1
-                            dataIN=ress_PFI_0_1_HzxLoc;
-                            searchtrials = [Freqwas.dir0_1.Trialind];
-                            durscheck=durs0_1;
-                            usewindow=1:2;
-                        case 2
-                            dataIN=ress_PFI_1_0_HzxLoc;
-                            searchtrials = [Freqwas.dir1_0.Trialind];
-                            durscheck=durs1_0;
-                            usewindow=1:2;
-                        case 3
-                            dataIN=ress_PFI_1_2_HzxLoc;
-                            searchtrials = [Freqwas.dir1_2.Trialind];
-                            durscheck=durs1_2;
-                            usewindow=1:2;
-                        case 4
-                            dataIN=ress_PFI_2_1_HzxLoc;
-                            searchtrials = [Freqwas.dir2_1.Trialind];
-                            durscheck=durs2_1;
-                            usewindow=1:2;
-                        case 5
-                            dataIN=ress_PFI_3_2_HzxLoc;
-                            searchtrials = [Freqwas.dir3_2.Trialind];
-                            durscheck=durs3_2;
-                            usewindow=1:2;
-                        case 6
-                            dataIN=ress_PFI_2_3_HzxLoc;
-                            searchtrials = [Freqwas.dir2_3.Trialind];
-                            durscheck=durs2_3;
-                            usewindow=1:2;
-                        case 7
-                            dataIN=ress_BPcatchonsetTGs;
-                            
-                            usewindow=1;
-                        case 8
-                            dataIN=ress_BPcatchonsetBGs;
-                            
-                            usewindow=1;
-                        case 9
-                            dataIN=ress_catchonsetTGs;
-                            
-                            usewindow=1;
-                        case 10
-                            dataIN=ress_catchonsetBGs;
-                            
-                            usewindow=1;
-                        case 11
-                            dataIN=ress_catchoffsetTGs;
-                            
-                            usewindow=2;
-                            
-                        case 12
-                            dataIN=ress_catchoffsetBGs;                            
-                            usewindow=2;
-                            
-                        case 13
-                            dataIN=ress_BPcatchoffsetTGs;                            
-                            usewindow=2;
-                        case 14
-                            dataIN=ress_BPcatchoffsetBGs;                            
-                            usewindow=2;
-                            
-                    end
-                    
-              
-                    % now that we have a datatype, get the right epochs that share stimulus configuration
-                    
-                    % also correct window (pre or post indication of target
-                    % presence)
-                    for windch=1:length(usewindow)
-                        wind=usewindow(windch);
-                        windcheck= windowsmall(wind,:);
-                        
-                        tidx=dsearchn(timeid', [windcheck]');
-                        
-                        
-                        %reduce size. 
-                        if id<7
-                            datanow=squeeze(dataIN(ifreq,iloc).ressTS);
-                            
-                        datast= squeeze(datanow(:,tidx(1):tidx(2)));
-                        else %catch trials
-                            
-                            datast= squeeze(dataIN(ifreq,iloc,:,tidx(1):tidx(2)));
-                        end
-                        
-                        %% check for bad trials (noisy)
-                        %std per trial(average over timepoints)
-%                         
-%                         datastSD = nanstd(datast,0,2);
-%                         
-%                         %remove those with 2.5*std from mean.
-%                         trialSD=nanstd(datastSD);
-%                         mSD=nanmean(datastSD);
-                        keeptrials=1:size(datast,1);
-%                         
-%                         %remove the trials with excessive noise.
-badtrials=[];
-%                         badtrials=find(datastSD>mSD+2.5*trialSD)';
-%                         
-%                         % also skip the trials which were only transient button
-%                         % presses. (less than one second).
-                        shorttrials=[]; 
-%                         
-%                         %also remove NANs:
-                        nantrials = find(isnan(datast(:,1)));
-                        zerotrials= find(datast(:,1)==0);
-                        badtrials = [badtrials, shorttrials, nantrials', zerotrials'];
-%                         
-%                         
-%                         % remove these from consideration.
-if sum(badtrials)>0
-    keeptrials(badtrials)=[];
-    datast=datast(keeptrials,:);
-end
-                        %%
-%                         %%
-                        
-                        if id==1 && windch==1%start here
-                            if ndims(datast)<2
-                                dataOUT(1,:,:)=datast;
-                            else
-                                dataOUT=datast;
-                            end
-                            
-                        else
-                            % append
-                            if ndims(datast)<2
-                                tmp(1,:,:)=datast;
-                                dataOUT=cat(1,dataOUT,tmp);
-                                
-                            else
-                                dataOUT=cat(1,dataOUT,datast);
-                            end
-                            
-                        end
-                        
-                    end
-                    
-                end
-                
-                %now we have ALL the data this freqxLoc.
-                %%
-                
-                %
-                    
-                    [s,f]=mtspectrumc(dataOUT', param_spctrm)    ;
-                    
-                    %TAKE mean
-                    sMEAN = squeeze(nanmean(log(s),2));
-                    
-                    %% comp SNR;
-                    kernelw = [-1/6 -1/6 -1/6   0 0 1  0 0 -1/6  -1/6 -1/6];
-                    kernelw = [-1/4 -1/4    0 0 1  0 0 -1/4 -1/4];
-                    %                 
-%                     %take mean
-                    sNOW= conv(sMEAN, kernelw, 'same');
-                %
-%                     figure(1); clf
-%                     hold on;
-%                     plot(f,sNOW);
-%             
-            %%
-            
-            
-            RESS_staticSNR_byHzxLoc_2fTG(ifreq,iloc,:) = sNOW; %channs x hz
-            
-            end
-        end
-        
-        
-        save('RESS_statSNR', 'RESS_staticSNR_byHzxLoc_2fTG', 'f', 'kernelw', '-append')
+        save('RESS_statSNR', 'RESS_staticSNR_byHz', 'f', 'kernelw')
     end
     
 end
@@ -536,34 +301,32 @@ if job.concatacrossppanst==1
     
     %%
     
-    acrossRESS_SNR_freqs=zeros(length(allppants), 10,4,205);
-    acrossRESS_SNR=zeros(length(allppants), 10,4);
+    acrossRESS_SNR_freqs=zeros(length(allppants), length(peakfreqsare),1065);
+     acrossRESS_SNR = zeros(length(allppants), length(peakfreqsare));
     
     icounter=1;
-    peakfreqsare=[8,13,15,18,20,40,16,26,30,36];
+    
     for ippant=allppants
         cd(basefol)
-        cd(num2str(ippant))
+    cd(pdirs(ippant).name)
         
         load('RESS_statSNR')
         
-        acrossRESS_SNR_freqs(icounter,1:6,:,:)=RESS_staticSNR_byHzxLoc;
-        acrossRESS_SNR_freqs(icounter,7:10,:,:)=RESS_staticSNR_byHzxLoc_2fTG;
+        acrossRESS_SNR_freqs(icounter,:,:)=RESS_staticSNR_byHz;
+        
         
         for ifreq= 1:length(peakfreqsare)
             [~, id]= min(abs(f-peakfreqsare(ifreq)));
-            if ifreq <7
-            acrossRESS_SNR(icounter,ifreq,:)=squeeze(RESS_staticSNR_byHzxLoc(ifreq,:,id));
-            else
-                acrossRESS_SNR(icounter,ifreq,:)=squeeze(RESS_staticSNR_byHzxLoc_2fTG(ifreq-6,:,id));
-            end
+            
+            acrossRESS_SNR(icounter,ifreq)=squeeze(RESS_staticSNR_byHz(ifreq,id));
+            
         end
         icounter=icounter+1;
     end
     %
     cd(basefol)
-    cd('newplots-MD')
-    save('GFX_ressSNR_static', 'acrossRESS_SNR_freqs','f', 'acrossRESS_SNR')
+    cd('GFX_EEG-RESS')
+    save('GFX_ressSNR_static', 'acrossRESS_SNR_freqs','f', 'acrossRESS_SNR', 'peakfreqsare')
     
 end
 
@@ -572,9 +335,8 @@ end
 if job.plotHzsacrossppants==1
     %%
     cd(basefol)
-    cd('newplots-MD')
-    %load raw for comparison
-    load('GFX_rawSNR_static.mat');
+    cd('GFX_EEG-RESS')
+    
       load('GFX_ressSNR_static.mat'); 
       
     %%
@@ -584,77 +346,93 @@ if job.plotHzsacrossppants==1
     cols(5).c='r';
     cols(6).c='r';
     
-    peakfreqsare=[8,13,15,18,20,40,16,26,30,36];
+    
     ressd=[];
 
-    plotpeaks = [1,2,3,4,7,8,9,10];
+% peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!   
+
+
     %%
     clf
-    
-    for ipl=1:2
+    lc={};
+    for ipl=1:3 % TGs, BGs, IMs
         switch ipl
             case 1
-                usehz=1:4;
-                col= 'r';
-                pname = '1st harmonic';
+                usehz=1;%[1,3,5];
+                col= 'b';
+                pname = 'Target SSVEPs';
             case 2
-                usehz=7:10;
+                usehz=[2];
                 
                 col= [0 .5 0];
-                pname = '2nd harmonic';
-                clf
+                pname = 'Background SSVEPs';
+                
             case 3
-                usehz=5:6;
+                usehz=7;%:9;
                 
-                col= [0 .5 0];
+                col= ['k'];
                 
-                pname = 'BGs';
+                pname = 'Inter-modulaion components';
 %                 clf
         end
         pcounter=1;
     for ihz=usehz
         
-        subplot(2,2,pcounter)
-        if ihz==6            
-            subplot(2,2,3)
-            col='r';
-        end
+%         subplot(2,2,pcounter)
+        hold on
         % first plot the RESS result        
-    meanHz=mean(squeeze(nanmean(acrossRESS_SNR_freqs(:,ihz,:,:),1)),1);
+    meanHz=(squeeze(nanmean(acrossRESS_SNR_freqs(:,ihz,:),1)));
     
     
      ressd(ihz)=plot(f, meanHz, 'color', col, 'linewidth', 2);
     hold on
     
-    xlim([ 5 20])   
-    ylim([ -.25 .5])
-    
-    if  ihz>7
-        xlim([20 40])
-    elseif ipl==3
-        xlim([peakfreqsare(ihz)-5 peakfreqsare(ihz)+5])
-        ylim([ -1.5 5]) 
-    end
-    ylabel('log(SNR)')
+%     xlim([ 5 20])   
+%     ylim([ -.25 .5])
+%     
+%     if  ihz>7
+%         xlim([20 40])
+%     elseif ipl==3
+%         xlim([peakfreqsare(ihz)-5 peakfreqsare(ihz)+5])
+%         ylim([ -1.5 5]) 
+%     end
+    ylabel('RESS log(SNR)')
     xlabel('Hz')
 %     then plot the traditional
- usechan=30;
-    meanHz=squeeze(mean(acrossRAWSNR_freqs(:,:,:,usechan,:),1));
-    
-    plotme=squeeze(mean(meanHz(1,:,:),2))';
-    rawd=plot(f, plotme, 'k', 'linewidth', 3);
-set(gca, 'fontsize', 15)
-    legend(['RESS-SNR ' num2str(peakfreqsare(ihz)) ' Hz'])
+ 
+ 
     pcounter=pcounter+1;
-%     axis square
+
+lc = [lc {pname}];
+
+pvals = zeros(1,size(acrossRESS_SNR_freqs,3));
+for it=1:size(acrossRESS_SNR_freqs,3)
+    
+    
+[~,pvals(it)]= ttest(squeeze(acrossRESS_SNR_freqs(:,ihz,it)),0);
+end
+
+[qsig, qmask] = fdr(pvals,.05);
+
+sigpoints=find(pvals<=qsig);
+
+% for isig= 1:length(sigpoints)
+% text(f(sigpoints(isig)), 4, '*')
+% end
+
     end
+    
+    
+       legend(lc)
+       
+        
+       
     set(gcf, 'color', 'w')
     %
-    cd(basefol)
-    cd('newplots-MD')
-    cd('Figures')
-    %
-    print('-dpng', ['RESS target SNR, ' pname])
+    ylim([-1 3])
+    xlim([0 65])
+    set(gca, 'fontsize', 25)
+%       print('-dpng', ['RESS target SNR, ' pname])
     end
      %%
   

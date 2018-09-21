@@ -1,6 +1,6 @@
 
 clear all
-addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
+addpath('/Users/MattDavidson/Desktop/SSVEP-feedbackproject')
 cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
 basefol=pwd;
     %%

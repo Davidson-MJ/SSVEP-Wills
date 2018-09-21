@@ -33,7 +33,7 @@ job.calcmissedcatches_bylocationperppant=0;
 job.plotPpantProbandSig=0;
 %
 job.plotCatchtracesbynumTargets_eachppant=1;  % also plots overall RTs to catch onset/offset.
-job.plotCatchtracesbynumTargets=1; % not really by num targets, plots vs shuffled.
+job.plotCatchtracesbynumTargets=0; % not really by num targets, plots vs shuffled.
 %
 job.plotmissedcatchesbynumremoved=0;
 job.Plotmissedcatches_bylocationperppant=0;
@@ -833,7 +833,7 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
     clf
     %collect RTs for later.
     onsetRTs=[];offsetRTs=[];
-    for onsetoroffset=1:2
+    for onsetoroffset=1%:2
         %reset outgoing variable
 
         figure(1);    
@@ -842,9 +842,15 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
         if onsetoroffset==1
             datais=catchBP_ProbtraceperPpant_by_numtargetsabsent;
             col = ['g'];
+            xt=xtONSET;
+                eventis= 'removal' ;
+        
         else
             datais=catchBP_ProbtraceperPpantOFFSET_by_numtargetsabsent;
             col = ['r'];
+            xt=xtOFFSET;
+                eventis= 'return' ;
+        
         end
         %%
         for ippant=1:nppants
@@ -919,65 +925,75 @@ end
         % for each time point, calculate width of distribution:
         for ip = 1:length(shuffdata)
             
-            %find 99% 
-            %plot histogram:
-            x=sort(shuffdata(:,ip));                      
-            %convert to zscore
-            tz= zscore((x));
-            %find closest to zscores to 99% CI (2.57)
-            AB=dsearchn(tz, [-2.57 2.57]');
-              
-            CI= [x(AB(1)), x(AB(2))];
-%             SEM = nanstd(x)/sqrt(length(x));               % Standard Error
-%             ts = tinv([.025  .975],length(x)-1);      % T-Score
-%             CI = nanmean(x) + ts*SEM;
-%         
+           shd= shuffdata(:,ip)';
+            shd(shd==0)=.0001;
+            %note not normally distributed!
+            %try logit transform
+            lp = log(shd)-log(1-shd);
+                
+            %now rearrange so that we can place correct scores.
+              [lpn,id]=sort(lp);%convert to zscore
+              %sort first.
+            tz= zscore((lpn));
+                        
+            %find closest to zscores to 99% CI (2.57), 95% CI= 1.96;
+%             AB=dsearchn(tz, [-2.57 2.57]');
+            AB=dsearchn(tz', [-1.96 1.96]');              
+            %this is upper and lower bound.
+            CI= [lpn(AB(1)), lpn(AB(2))];
+            
+            %now convert back from logit.
+%CI upper bound (95%)
+Shuffupperbound(1,ip) = exp(CI(2)) ./ (exp(CI(2))+1);
+Shufflowerbound(1,ip) = exp(CI(1)) ./ (exp(CI(1))+1);
+          
 
-            %width of shaded region to plot
-            stErrShuff(1,ip)= CI(2)-median(CI); % half for plotting
-            Shuffupper(1,ip)= CI(2);
-            Shufflower(1,ip)= CI(1);
         end
         
-%         stErrShuff = nanstd(shuffdata)/sqrt(size(shuffdata,1));
-        
-%         anovadata(1,:,:) = squeeze(mean(shuffdata,2)); %for comparison, plot 24 shuffs, by 24 catch traces.
+     
         %%
-        %plot shuffled:         
+        %plot median for shuffle
         
-        if onsetoroffset==1
-        shf=shadedErrorBar(xtONSET, squeeze(nanmedian(shuffdata,1)), stErrShuff, 'm',1);
-        xlim([-1 2])
-        eventis= 'removal' ;
-        
-        
-        else
-        shf=shadedErrorBar(xtOFFSET, squeeze(nanmedian(shuffdata,1)), stErrShuff, 'm',1);
-        xlim([-1 2])
-        eventis='return';
-        end
-        %%
-        hold on
-       
+              shf=plot(xt, squeeze(nanmedian(shuffdata,1)), 'color', 'm');
             
-            dt= squeeze(nanmean(stack,1));
             
-       
-%             
-            %%
-            
-            if onsetoroffset==1
-            pl=plot(xtONSET, (dt), 'color', [0 .5 0], 'linew', 3);
-%                 pl =shadedErrorBar(xtONSET, median(dt,1), stErrM, col,1);
-%             pl.mainLine.Color = [0 .5 0];
-%             pl.patch.FaceColor = [0 .5 0];
-            else
-                pl=plot(xtOFFSET, (dt), 'r', 'linew', 3);
-%             pl =shadedErrorBar(xtOFFSET, mean(dt,1), stErrM, col,1);
-            end
-%             pl_leg(itarg)=pl.patch;
+%           
             hold on
             
+            
+            
+            %add patch for shuffled data
+            %Calculate the error bars
+            
+            uE=Shuffupperbound;
+            lE=Shufflowerbound;
+            
+            %Make the patch
+            yP=[lE,fliplr(uE)];
+            xP=[xt,fliplr(xt)];
+            
+            %remove nans otherwise patch won't work
+            xP(isnan(yP))=[];
+            yP(isnan(yP))=[];
+            
+            colsh='m';
+            H.patch=patch(xP,yP,1,'facecolor',colsh,...
+                'edgecolor','none',...
+                'facealpha',.15);
+            
+            
+            %Make pretty edges around the patch.
+            H.edge(1)=plot(xt,lE,'-','color',colsh);
+            H.edge(2)=plot(xt,uE,'-','color',colsh);
+             xlim([-1 4])
+        
+        %% plot  observed.
+     dt= squeeze(nanmean(stack,1));
+             
+            pl=plot(xt, (dt), 'color', [col], 'linew', 3);
+            %%
+            
+           
             
             %store real catch trace across avail trials for comparison of
             %significant departure from shuffled.
@@ -996,7 +1012,7 @@ end
             if onsetoroffset ==1
                 %find first point data lower is greater than shuff upper
 %             sigpoint=find((dt(120:end))>Shuffupper(120:end), 1 ); %finds first.
-            sigpoints=find(dt>Shuffupper); %finds first.
+            sigpoints=find(dt>Shuffupperbound); %finds first.
             sigpoint = min(sigpoints(sigpoints>120));
             placement = (sigpoint)/60 -2;
            
@@ -1009,7 +1025,7 @@ end
             
             else %for offsets, we want the first ns point.
 %             sigpoint=find(dt(480:end)<Shuffupper(480:end), 1 ); %finds first.
-            sigpoints=find(dt<Shuffupper);
+            sigpoints=find(dt<Shuffupperbound);
             
             %first after offset
             sigpoint = min(sigpoints(sigpoints>480));
