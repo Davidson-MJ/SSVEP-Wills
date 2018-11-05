@@ -21,13 +21,6 @@ dbstop if error
 
 job.concatLiketrialsperppant=1; %also performs RESS, we are left with RESS filters per freq per ppant.
 
-% job.applyRESSpertrialtype=1; %after constructing RESS filters in the previous step, here we apply to all relevant trials, 
-% %also reduces the size of the 
-
-
-
-
-  
 % SET UP RESS params.
 
 peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!
@@ -49,8 +42,9 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
 % allppants=1:19;
 
 %remaining participants after behavioral data analysis/exclusion
-allppants=[1,2,4,6,9:16,18]; %
-
+% allppants=[1,2,4,6,9:16,18]; %
+allppants=[1,2,4,6,7,9:19]; % NEW ppants.
+%newppants =[7,17,19]
 window=[-3 3];
 
 srate=250;
@@ -93,7 +87,7 @@ if job.concatLiketrialsperppant==1
     usechans=[1:64]; %occipital
     
     
-    for ifol =allppants(5:end)
+    for ifol =allppants
         
         
         %%
@@ -278,13 +272,15 @@ if job.concatLiketrialsperppant==1
                     
                     
                 end
-        
+        %%
             savename='RESSfilterdata';
         
         
         save(savename, 'ressEVEC_byHz', 'ressEVEC_byHz_MAPS', 'usechans', 'neighbour', 'windowsmall', 'peakfreqsare')
+       %%
         cd([basefol filesep 'Figures' filesep 'RESS filters per participant'])
         suptitle(['Participant ' num2str(ifol) ])
+       %%
         print('-dpng', ['RESS filters for  ppant ' num2str(ifol)]);
         disp(['fin for ppant' num2str(ifol)])
     end

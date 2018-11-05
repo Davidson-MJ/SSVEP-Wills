@@ -24,7 +24,8 @@ pdirs = dir([pwd filesep '*EEG']);
 
 %remaining participants after behavioral data analysis/exclusion
 %remaining participants after behavioral data analysis/exclusion
-allppants=[1,2,4,6,9:16,18]; %
+% allppants=[1,2,4,6,9:16,18]; %
+allppants=[1,2,4,6,7,9:19]; % NEW ppants.
 
 % SET UP params.
 window=[-3 3];
@@ -104,37 +105,33 @@ if job.applyRESSperppant_toPFI==1
                     datast=dataIN;
                     
                     % remove bad trials.
-                    %% check for bad trials (noisy)
-                    %                     %std per trial(average over electrodes)
-                    %                     tmp=[];
-                    %                     if ndims(datast)<3
-                    %                         tmp(1,:,:)= datast;
-                    %                         datast=tmp;
-                    %                     end
-                    %                     datastSD = nanstd(squeeze(nanmean(datast,2)),0,2);
-                    %
-                    %                     %remove those with 2.5*std from mean.
-                    %                     trialSD=nanstd(datastSD);
-                    %                     mSD=nanmean(datastSD);
-                    %                     keeptrials=1:size(datast,1);
-                    %
-                    %                     %remove the trials with excessive noise.
-                    %                     badtrials=find(datastSD>mSD+2.5*trialSD)';
-                    %
-                    %                     % also skip the trials which were only transient button
-                    %                     % presses. (less than one second).
-                    %                     shorttrials = find(durscheck<60);
-                    %                     badtrials = [badtrials, shorttrials];
-                    %
-                    %                     % remove these from consideration.
-                    %                     keeptrials(badtrials)=[];
-                    %                     datast=datast(keeptrials,:,:);
-                    %
+                    % check for bad trials (noisy)
+                                        %std per trial(average over electrodes)
+                                        tmp=[];
+                                        if ndims(datast)<3
+                                            tmp(1,:,:)= datast;
+                                            datast=tmp;
+                                        end
+                                        datastSD = nanstd(squeeze(nanmean(datast,2)),0,2);
                     
+                                        %remove those with 2.5*std from mean.
+                                        trialSD=nanstd(datastSD);
+                                        mSD=nanmean(datastSD);
+                                        keeptrials=1:size(datast,1);
                     
+                                        %remove the trials with excessive noise.
+                                        badtrials=find(datastSD>mSD+2.5*trialSD)';
                     
+                                        % also skip the trials which were only transient button
+                                        % presses. (less than one second).
+%                                         shorttrials = find(durscheck<60);
+%                                         badtrials = [badtrials, shorttrials];
                     
-                    BPstosave = BPstokeep(trialtypesperTargPresent,:);
+                                        % remove these from consideration.
+                                        keeptrials(badtrials)=[];
+                                        datast=datast(keeptrials,:,:);
+                    
+                                        BPstosave = BPstokeep(keeptrials,:);
                     
                     %now we have the correct trials, get the appropriate
                     %filter

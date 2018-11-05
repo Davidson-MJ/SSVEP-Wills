@@ -86,6 +86,8 @@ for ippant = 1:20
         end
     
         
+        set(gca, 'ytick', 1:4,'yticklabel', {'TL', 'TR', 'BL', 'BR'}) 
+        xlabel('sec')
     end
     set(gcf, 'color', 'w');
     print('-dpng', ['All Trials Participant ' num2str(ippant) '-' num2str(ifig) ])

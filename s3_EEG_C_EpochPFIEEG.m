@@ -21,7 +21,7 @@ dbstop if error
 
 
 
-job.epochperppant_PFI=0; %epochs raw EEG and labels according to number and direction of target PFI involved (still time-domain).
+job.epochperppant_PFI=1; %epochs raw EEG and labels according to number and direction of target PFI involved (still time-domain).
 
 
 job.erpimagePFIusingSNR=0; %freq domain within participant, any number of targets, just increasing or decreasing PFI.
@@ -49,7 +49,8 @@ job.BPandSSVEPtimecourseacrossppants_numSeparate=0; %this uses all/any PFI. (any
 job.BPandSSVEPtimecourseacrossppants_dursSeparate=0; %this uses all/any PFI. (any duration, any number).
 
 %remaining participants after behavioral data analysis/exclusion
-allppants=[1,2,4,6,9:16,18]; %
+% allppants=[1,2,4,6,9:16,18]; %
+ allppants=[1,2,4,6,7,9:19]; % new
 
 if job.epochperppant_PFI==1
     cd(basefol)
@@ -87,18 +88,18 @@ if job.epochperppant_PFI==1
         counter1_2=1;
         ppant_SNREEG_PFI_2_3 = [];
         counter2_3=1;
+        ppant_SNREEG_PFI_3_4 = [];
+        counter3_4=1;
         %Reappearances
+        ppant_SNREEG_PFI_4_3 = [];        
+        counter4_3=1;
         ppant_SNREEG_PFI_3_2 = [];
         counter3_2=1;
         ppant_SNREEG_PFI_2_1 = [];
         counter2_1=1;
         ppant_SNREEG_PFI_1_0 = [];
-        counter1_0=1;
+        counter1_0=1;        
         
-        ppant_SNREEG_PFI_3_4 = [];
-        ppant_SNREEG_PFI_4_3 = [];
-        counter3_4=1;
-        counter4_3=1;
         
         durs0_1=0;
         durs1_0=0;
@@ -130,6 +131,46 @@ if job.epochperppant_PFI==1
             %first establish the direction of changes (disap /reappear
             %targets).
             accumBP = nansum(trialdata.allBPs,1);
+            
+            
+            % want to remove transients?
+            excludeTransientlength=15; % frames = 1/60
+            if excludeTransientlength>0;%; %ms
+                % then adjust for short transient button presses:
+                
+%                 figure(1);
+%                 plot(accumBP, 'k'); %plot original.
+                
+                % find all diffs
+                sws = find(diff(accumBP));
+                
+                %how long between BPs?
+                diff_sws = diff(sws);
+                
+                rmv = find(diff_sws<excludeTransientlength);
+                % now work through and replace.
+                for irm= rmv
+                    
+                    tremovesw =sws(irm);
+                    %replace values for this period:
+                    vals = accumBP(1,tremovesw);
+                    %replace to = sws
+                    trep = sws(irm+1);
+                    %replace now:
+                    accumBP(1,tremovesw:trep)=vals;
+                    
+                    
+                end
+                
+%                 hold on;
+%                 plot(accumBP, 'r'); %check method.
+  
+            end
+            
+            
+            
+            
+            
             directionBP = diff(accumBP);
             directionBPtimes = find(directionBP~=0);
             directionBPtimes=directionBPtimes+1; %account for diff function
@@ -140,6 +181,10 @@ if job.epochperppant_PFI==1
             
             
             
+              % present visualization as sanity check.
+%             figure(1); clf;
+%             plot(accumBP,'k', 'linew', 3); title(['Trial ' num2str(itrial)]);
+%             ylim([-1 5])
             
             if trialdata.Goodtrial==1
                 
@@ -154,13 +199,18 @@ if job.epochperppant_PFI==1
                     %disap or reap.
                     if perceptwas<perceptis
                         PFIdir=1; %disappearing, an extra button is being pressed
+                        col='b';
                     else
                         PFIdir=-1; %Reappearing
+                        col='r';
                     end
                     
                     %gather EEG time index.
                     [~,timePFI]= min(abs(tt-timeis/60));
-                    
+                     
+%                     hold on
+%                     plot([timeis timeis], ylim, [col]); 
+
                     
                     
                     
@@ -171,417 +221,115 @@ if job.epochperppant_PFI==1
                         outgoingPFI= SNRdata(:,timePFI-onsetc:timePFI+onsetc);
                         
                         
-                        
-                        %now store this PFI epoch according to type.
-                        switch perceptis %num pressed
-                            case 0 %currently NO buttons pressed.
-                                if PFIdir==1
-                                    error('checkcode') %cannot go from less than zero button press.
-                                else
-                                    if perceptwas==1 % gone from 1 to 0 BP (reappearing)
-                                        try
-                                        ppant_SNREEG_PFI_1_0(counter1_0,:,:) = outgoingPFI;
-                                        
-                                        %how long was this event?
-                                        %find the correct framestamp and duration.
-                                        [~,indx]=min(abs(trialdata.PFI_disap_1target_framestart - timeis));
-                                        durs=trialdata.PFI_disap_1target_durs;
-                                        
-                                        %save duration of this event for averaging
-                                        %'best' later.
-%                                         durs1_0(counter1_0) = durs(indx);
-                                        
-                                        
-                                        
-                                        %Store which frequency was involved:
-                                        % timestap across BPs.
-                                        tmpBPs=trialdata.allBPs(:,timeis-1); % prev BP since reappearing.
-                                        
-                                        
-                                        if ~isnan(sum(tmpBPs))
-                                            
-                                    
-                                            Locationwas.dir1_0(counter1_0).d= (find(tmpBPs));
-                                        else %it was during catch period, so don't count.
-                                            
-                                    
-                                            Locationwas.dir1_0(counter1_0).d= nan;
-                                        end
-                                        
-                                        % store BP also
-                                        
-                                        BPs1_0(counter1_0,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                        
-                                        
-                                        
-                                        counter1_0=counter1_0+1;
-                                        catch
-                                            disp('skipped a 1_0')
-                                        end
-                                    elseif perceptwas==2
-                                        try
-                                        ppant_SNREEG_PFI_2_1(counter2_1,:,:) = outgoingPFI;
-                                        
-                                        [~,indx]=min(abs(trialdata.PFI_disap_2target_framestart - timeis));
-%                                         durs=trialdata.PFI_disap_2target_durs;
-                                        
-                                        %save duration of this event for averaging
-                                        %'best' later.
-%                                         durs2_1(counter2_1) = durs(indx);
-                                        
-                                        
-                                        
-                                        %Store which frequency was involved:
-                                        % timestap across BPs.
-                                        tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                        tmpBPs2=trialdata.allBPs(:,timeis);
-                                        dtmp= tmpBPs1-tmpBPs2;
-                                        
-                                        
-                                        
-                                        if ~isnan(sum(dtmp))
-                                            
-                                            Locationwas.dir2_1(counter2_1).d= (find(tmpBPs));
-                                        else %it was during catch period, so don't count.
-                                            
-                                            Locationwas.dir2_1(counter2_1).d= (find(tmpBPs));
-                                        end
-                                        
-                                        
-                                        
-                                        %also store BP trace.
-                                        BPs2_1(counter2_1,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                        
-                                        
-                                        counter2_1=counter2_1+1;
-                                        catch
-                                            disp('skipped a 2_1')
-                                        end
-                                    end
-                                end
-                                
-                            case 1 %single target
-                                if PFIdir==1 % PFI numbers increasing
-                                    try
-                                    ppant_SNREEG_PFI_0_1(counter0_1,:,:) = outgoingPFI;
-                                    
+                        %store according to direction, and number of
+                        %targets involved.
+                        if PFIdir==1 %increasing targets absent
+                            switch perceptis
+                                case 1
+                                         ppant_SNREEG_PFI_0_1(counter0_1,:,:) = outgoingPFI;                                    
                                     %how long was this event?
                                     %find the correct framestamp and duration.
-                                    [~,indx]=min(abs(trialdata.PFI_disap_1target_framestart - timeis));
-%                                     durs=trialdata.PFI_disap_1target_durs;
-                                    
+%                                     [~,indx]=min(abs(trialdata.PFI_disap_1target_framestart - timeis));
+%                                     durs=trialdata.PFI_disap_1target_durs;                                    
                                     %save duration of this event for averaging
                                     %'best' later.
-%                                     durs0_1(counter0_1) = durs(indx);
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    %also store BP trace.
-                                    BPs0_1(counter0_1,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                    
-                                    
+%                                     durs0_1(counter0_1) = durs(indx);                                    
+%                                     %also store BP trace.
+                                    BPs0_1(counter0_1,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));                                    
                                     counter0_1=counter0_1+1;
-                                    catch
-                                        disp('skipped a 0_1')
-                                    end
-                                else %decreasing numbers being pressed
-                                    if perceptwas==2
-                                        try
-                                        ppant_SNREEG_PFI_2_1(counter2_1,:,:) = outgoingPFI;
-                                        
-                                        [~,indx]=min(abs(trialdata.PFI_disap_2target_framestart - timeis));
-%                                         durs=trialdata.PFI_disap_2target_durs;
-%                                         
-%                                         %save duration of this event for averaging
-%                                         %'best' later.
-%                                         durs2_1(counter2_1) = durs(indx);
-%                                         
-                                        
-                                        %also store BP trace.
-                                        BPs2_1(counter2_1,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                        
-                                        counter2_1=counter2_1+1;
-                                        catch
-                                            disp('skipped a 2_1')
-                                        end
-                                    elseif perceptwas==3
-                                        try
-                                        ppant_SNREEG_PFI_3_2(counter3_2,:,:) = outgoingPFI;
-                                        
-                                        
-                                        [~,indx]=min(abs(trialdata.PFI_disap_3target_framestart - timeis));
-%                                         durs=trialdata.PFI_disap_3target_durs;
-%                                         
-%                                         %save duration of this event for averaging
-%                                         %'best' later.
-%                                         durs3_2(counter3_2) = durs(indx);
-                                        
-                                        %Store which frequency was involved:
-                                        % timestap across BPs.
-                                        tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                        tmpBPs2=trialdata.allBPs(:,timeis);
-                                        dtmp=tmpBPs1-tmpBPs2;
-                                        
-                                        
-                                        
-                                        
-                                        if ~isnan(sum(dtmp))
-                                            
-                                            Locationwas.dir3_2(counter3_2).d= (find(tmpBPs));
-                                        else %it was during catch period, so don't count.
-                                            
-                                            Locationwas.dir3_2(counter3_2).d= nan;
-                                        end
-                                        
-                                        
-                                        
-                                        %also store BP trace.
-                                        BPs3_2(counter3_2,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                        
-                                        
-                                        
-                                        counter3_2=counter3_2+1;
-                                        catch
-                                            disp('skipped a 3_2')
-                                        end
-                                    end
-                                    
-                                end
-                            case 2 %double target
-                                if PFIdir==1
-                                    try
-                                    ppant_SNREEG_PFI_1_2(counter1_2,:,:) = outgoingPFI;
-                                    [~,indx]=min(abs(trialdata.PFI_disap_2target_framestart - timeis));
-%                                     durs=trialdata.PFI_disap_2target_durs;
-%                                     
-%                                     %save duration of this event for averaging
-%                                     %'best' later.
-%                                     durs1_2(counter1_2) = durs(indx);
-%                                     
-                                    
-                                    %Store which frequency was involved:
-                                    % timestap across BPs.
-                                    tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                    tmpBPs2=trialdata.allBPs(:,timeis);
-                                    dtmp=tmpBPs2-tmpBPs1;
-                                    
-                                    if ~isnan(sum(dtmp))
-                                        
-                                        Locationwas.dir1_2(counter1_2).d= (find(dtmp));
-                                    else %it was during catch period, so don't count.
-                                        
-                                        Locationwas.dir1_2(counter1_2).d= nan;
-                                    end
-                                    
-                                    
-                                    
+                                case 2
+                                        ppant_SNREEG_PFI_1_2(counter1_2,:,:) = outgoingPFI;
+%                                     [~,indx]=min(abs(trialdata.PFI_disap_2target_framestart - timeis));
+%                                     durs=trialdata.PFI_disap_2target_durs;%                                     
+
+%                                     durs1_2(counter1_2) = durs(indx);%                                   
                                     %also store BP trace.
                                     BPs1_2(counter1_2,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                    
-                                    
                                     counter1_2=counter1_2+1;
-                                    catch
-                                        disp('skipped a 1_2')
-                                    end
-                                else
-                                    try
-                                    ppant_SNREEG_PFI_3_2(counter3_2,:,:) = outgoingPFI;
-                                    
-                                    
-                                    [~,indx]=min(abs(trialdata.PFI_disap_3target_framestart - timeis));
+                                case 3
+                                    ppant_SNREEG_PFI_2_3(counter2_3,:,:) = outgoingPFI;                                    
+%                                     [~,indx]=min(abs(trialdata.PFI_disap_3target_framestart - timeis));
 %                                     durs=trialdata.PFI_disap_3target_durs;
-                                    
-                                    %save duration of this event for averaging
-                                    %'best' later.
-%                                     durs3_2(counter3_2) = durs(indx);
-                                    
-                                    %Store which frequency was involved:
-                                    % timestamp across BPs.
-                                    tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                    tmpBPs2=trialdata.allBPs(:,timeis);
-                                    dBPs= tmpBPs1-tmpBPs2;
-                                    
-                                    
-                                    if ~isnan(sum(dBPs))
-                                        
-                                        Locationwas.dir3_2(counter3_2).d= (find(dBPs));
-                                    else %it was during catch period, so don't count.
-                                        
-                                        Locationwas.dir3_2(counter3_2).d= nan;
-                                    end
-                                    
-                                    
-                                    %also store BP trace.
-                                    BPs3_2(counter3_2,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                    
-                                    counter3_2=counter3_2+1;
-                                    catch
-                                    disp('skipped a 3_2')
-                                    end
-                                end
-                                
-                            case 3 %triple target
-                                if PFIdir==1
-                                    try
-                                    ppant_SNREEG_PFI_2_3(counter2_3,:,:) = outgoingPFI;
-                                    
-                                    [~,indx]=min(abs(trialdata.PFI_disap_3target_framestart - timeis));
-%                                     durs=trialdata.PFI_disap_3target_durs;
-%                                     
-%                                     %save duration of this event for averaging
-%                                     %'best' later.
 %                                     durs2_3(counter2_3) = durs(indx);
-%                                     
+BPs2_3(counter2_3,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
+counter2_3 = counter2_3+1;
+                                       
+                                case 4
+                                       ppant_SNREEG_PFI_3_4(counter3_4,:,:) = outgoingPFI;
                                     
-                                    
-                                    %Store which frequency was involved:
-                                    % timestap across BPs.
-                                    tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                    tmpBPs2=trialdata.allBPs(:,timeis);
-                                    dtmp = tmpBPs2-tmpBPs1;
-                                    
-                                    if ~isnan(sum(dtmp))
-                                        
-                                        Locationwas.dir2_3(counter2_3).d= (find(dtmp));
-                                    else %it was during catch period, so don't count.
-                                        Locationwas.dir2_3(counter2_3).d= nan;
-                                    end
-                                    
-                                    %also store BP trace.
-                                    BPs2_3(counter2_3,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                    
-                                    Freqwas.dir2_3(counter2_3).Trialind= itrial;
-                                    
-                                    counter2_3=counter2_3+1;
-                                    catch
-                                        disp('skipped a 2_3')
-                                    end
-                                else %decreasing.
-                                    try
-                                     ppant_SNREEG_PFI_4_3(counter4_3,:,:) = outgoingPFI;
-                                    
-                                    [~,indx]=min(abs(trialdata.PFI_disap_4target_framestart - timeis));
+%                                     [~,indx]=min(abs(trialdata.PFI_disap_4target_framestart - timeis));
 %                                     durs=trialdata.PFI_disap_4target_durs;
-%                                     
-%                                     %save duration of this event for averaging
-%                                     %'best' later.
-%                                     durs4_3(counter4_3) = durs(indx);
-%                                     
-                                    
-                                    
-                                    %Store which frequency was involved:
-                                    % timestap across BPs.
-                                    tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                    tmpBPs2=trialdata.allBPs(:,timeis);
-                                    dtmp = tmpBPs2-tmpBPs1;
-                                    
-                                    if ~isnan(sum(dtmp))
-                                        
-                                        Locationwas.dir4_3(counter4_3).d= (find(dtmp));
-                                    else %it was during catch period, so don't count.
-                                        
-                                        Locationwas.dir4_3(counter4_3).d= nan;
-                                    end
-                                    
-                                    %also store BP trace.
-                                    BPs4_3(counter4_3,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-                                    
-                                    
-                                    
-                                    counter4_3=counter4_3+1;
-                                    catch
-                                        disp('skipped 4_3')
-                                    end
-                                end
-                            case 4
-                                  if PFIdir==1
-                                      try
-                                    ppant_SNREEG_PFI_3_4(counter3_4,:,:) = outgoingPFI;
-                                    
-                                    [~,indx]=min(abs(trialdata.PFI_disap_4target_framestart - timeis));
-%                                     durs=trialdata.PFI_disap_4target_durs;
-%                                     
 %                                     %save duration of this event for averaging
 %                                     %'best' later.
 %                                     durs3_4(counter3_4) = durs(indx);
-%                                     
-                                    
-                                    
-                                    %Store which frequency was involved:
-                                    % timestap across BPs.
-                                    tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                    tmpBPs2=trialdata.allBPs(:,timeis);
-                                    dtmp = tmpBPs2-tmpBPs1;
-                                    
-                                    if ~isnan(sum(dtmp))
-                                        
-                                        Locationwas.dir3_4(counter3_4).d= (find(dtmp));
-                                    else %it was during catch period, so don't count.
-                                        Locationwas.dir3_4(counter3_4).d= nan;
-                                    end
-                                    
-                                    %also store BP trace.
                                     BPs3_4(counter3_4,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
-
-                                    counter3_4=counter3_4+1;
-                                      catch
-                                          disp('skipped a 3_4')
-                                      end
-                                else %decreasing.
-                                    try
-                                     ppant_SNREEG_PFI_4_3(counter4_3,:,:) = outgoingPFI;
+                                    counter3_4 = counter3_4+1;
                                     
-                                    [~,indx]=min(abs(trialdata.PFI_disap_4target_framestart - timeis));
+                            end
+                            
+                            
+                        else %decreasing number targets absent.
+                            switch perceptwas
+                                case 1
+                                     ppant_SNREEG_PFI_1_0(counter1_0,:,:) = outgoingPFI;                                        
+                                        %how long was this event?
+                                        %find the correct framestamp and duration.
+%                                         [~,indx]=min(abs(trialdata.PFI_disap_1target_framestart - timeis));
+%                                         durs=trialdata.PFI_disap_1target_durs;                                        
+                                        % store BP also                                        
+                                        BPs1_0(counter1_0,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));                                        
+
+
+                                        %save duration of this event for averaging
+                                        %'best' later.
+%                                         durs1_0(counter1_0) = durs(indx);                                        
+                                       
+                                        counter1_0=counter1_0+1;
+                                    
+                                case 2
+                                     ppant_SNREEG_PFI_2_1(counter2_1,:,:) = outgoingPFI;                                        
+                                        %how long was this event?
+                                        %find the correct framestamp and duration.
+%                                         [~,indx]=min(abs(trialdata.PFI_disap_2target_framestart - timeis));
+%                                         durs=trialdata.PFI_disap_2target_durs;                                        
+                                        % store BP also                                        
+                                        BPs2_1(counter2_1,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));                                        
+
+                                        %save duration of this event for averaging
+                                        %'best' later.
+%                                         durs2_1(counter2_1) = durs(indx);
+                                        
+                                        counter2_1=counter2_1+1;
+                                                                                
+                                case 3
+                                        ppant_SNREEG_PFI_3_2(counter3_2,:,:) = outgoingPFI;                                        
+%                                         [~,indx]=min(abs(trialdata.PFI_disap_3target_framestart - timeis));
+%                                         durs=trialdata.PFI_disap_3target_durs;%                                         
+%                                         %save duration of this event for averaging
+%                                         %'best' later.
+%                                         durs3_2(counter3_2) = durs(indx);                                        
+                                          BPs3_2(counter3_2,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));                                        
+
+                                    counter3_2 = counter3_2+1;
+                                case 4
+                                    ppant_SNREEG_PFI_4_3(counter4_3,:,:) = outgoingPFI;                                    
+%                                     [~,indx]=min(abs(trialdata.PFI_disap_4target_framestart - timeis));
 %                                     durs=trialdata.PFI_disap_4target_durs;
-%                                     
+
 %                                     %save duration of this event for averaging
 %                                     %'best' later.
 %                                     durs4_3(counter4_3) = durs(indx);
-%                                     
-                                    
-                                    
-                                    %Store which frequency was involved:
-                                    % timestap across BPs.
-                                    tmpBPs1=trialdata.allBPs(:,timeis-1);
-                                    tmpBPs2=trialdata.allBPs(:,timeis);
-                                    dtmp = tmpBPs2-tmpBPs1;
-                                    
-                                    if ~isnan(sum(dtmp))
-                                        
-                                        Locationwas.dir4_3(counter4_3).d= (find(dtmp));
-                                    else %it was during catch period, so don't count.
-                                        
-                                        Locationwas.dir4_3(counter4_3).d= nan;
-                                    end
-                                    
-                                    %also store BP trace.
                                     BPs4_3(counter4_3,:)=accumBP(1,(timeis+window(1)*60):(timeis+window(2)*60));
+
+                                    counter4_3 = counter4_3+1;
                                     
-                                    
-                                    
-                                    counter4_3=counter4_3+1;
-                                    %
-                                    catch
-                                        disp('skipped a 4_3')
-                                    end
-                                end
-                                
-                                
-                        end
-                    end
-                end
-                
-                
-                
-                
-                
-            end
+                            end %nPFI
+                        end%perceptdir
+                    end %if epochrange
+                end %all events
+            end %good trials
             
-            
-            
-        end
+        end %all trials
         
         savename= ['ppant_PFI_Epoched'];
         

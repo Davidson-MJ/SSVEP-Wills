@@ -7,7 +7,8 @@ basefol=pwd;
 %%
 pdirs = dir([pwd filesep '*_*' 'EEG']);
 
-allppants=[1,2,4,6,9:16,18]; %
+% allppants=[1,2,4,6,9:16,18]; %
+ allppants=[1,2,4,6,7,9:19]; %
 
 job.crunchacrossppants=1; %saves also within participant folders.
 job.plotacrossppants=1;
@@ -78,31 +79,33 @@ if job.plotacrossppants==1
     figure(1);
     clf
     mSNRchan=squeeze(mean(acrossPPSNR(:,62,:),1));
-    plot(f, mSNRchan)
+    plot(f, mSNRchan, 'k')
     hold on
-    cols={'r', 'k', 'r', 'k', 'm','m', 'r', 'r', 'k','m','r'};
+    cols={'b', 'k', 'b', 'k', 'm','m', 'b', 'b', 'k','m','b'};
     counter=1;
     p=[];
         for ifreq=[15,20,30,40,5,35, 45,60,80, 25, 75]
             [~,usef]= min(abs(f-ifreq));
             yis= mSNRchan(usef);
             xis= f(usef);
-           p(counter)=plot(xis, yis, 'o', 'linew', 5, 'color', cols{counter}) ;
+           p(counter)=plot(xis, yis, 'o', 'markersize', 15, 'linew', 5, 'color', cols{counter}) ;
 %            p(counter)=text(xis, yis, 'o', 'fontsize', 25, 'color', cols{counter}) ;
            
            if ifreq==60
-               p(counter)=plot(xis, yis, 'o', 'markersize', 15,'linew', 2, 'color', 'k') ;
+               p(counter)=plot(xis, yis, 'o', 'markersize', 30,'linew', 5, 'color', 'k') ;
            end
             counter=counter+1;
             
         end
         %%
-        legend([p(1), p(2), p(5)], {'Target flicker', 'Background flicker', 'Intermodulation'})
+       lg= legend([p(1), p(2), p(5)], {'Target flicker', 'Background flicker', 'Intermodulation'});
+       set(lg, 'fontsize', 35)
+       
         axis tight
         xlabel('Frequency (Hz)')
         ylabel('log(SNR)')
         set(gcf, 'color', 'w')
-        set(gca, 'fontsize', 25)
+        set(gca, 'fontsize', 35)
 %         ylim([0 .4])
 xlim([ 0 85])
 ylim([-1 6])
@@ -118,6 +121,7 @@ ylim([-1 6])
     getelocs;
     %%
     counter=1;
+    colormap('viridis')
     mTOPOs = squeeze(mean(acrossPPSNR,1));
     clf
      titles={'(TG) f1', '(TG) 2f1', '(TG) 3f1',...
@@ -135,18 +139,56 @@ ylim([-1 6])
         if cm<1
             cm=1;
         end
-        caxis([0 cm])
+%         caxis([0 cm])
+        caxis([0 3])
 %         title([num2str(ifreq) ' Hz'])
 title(titles{counter})
         set(gca, 'fontsize', 25)
         counter=counter+1;
        ylabel(c,'log(SNR)')
     end
+    colormap('viridis')
+    %
+    shg
     %%
     set(gcf, 'color', 'w')
     print('-dpng', 'Topos across all, SNR preRESS, whole trial')
     %%
-    
+    % also alternate plot
+    counter=1
+     for ifreq=[5,15,20,25,30,35,40,45,60]
+        
+        [~,usef]= min(abs(f-ifreq));
+        subplot(1,9,counter)
+        
+        plotme=squeeze(mTOPOs(:,usef));
+        topoplot(squeeze(mTOPOs(:,usef)), elocs(1:64))
+      
+        
+        cm=round(max(plotme));
+        if cm<1
+            cm=1;
+        end
+
+        caxis([0 2])
+%         title([num2str(ifreq) ' Hz'])
+% title(titles{counter})
+title([num2str(ifreq)])
+        set(gca, 'fontsize', 25)
+        counter=counter+1;
+%           if ifreq==60
+%         c=colorbar;
+        
+%        ylabel(c,'log(SNR)')
+%           end
+    end
+    colormap('viridis')
+    %
+    shg
+    %%
+    set(gcf, 'color', 'w')
+    %%
+    print('-dpng', 'Topos across all, SNR preRESS, whole trial, singlefile caxis 2')
 end
         
         

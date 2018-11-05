@@ -8,11 +8,13 @@ basefol=pwd;
 getelocs
 dbstop if error
 
-allppants=[1,2,4,6,9:16,18]; %
+% allppants=[1,2,4,6,9:16,18]; %
+ goodppants=[1,2,4,6,7,9:19]; %
+
 dirs = dir([pwd filesep '*_*' 'EEG']);
 
 %%
-for ifol = allppants
+for ifol = [7,17,19]%allppants
     cd(basefol)
     cd(dirs(ifol).name)
     

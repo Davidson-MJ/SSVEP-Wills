@@ -10,9 +10,6 @@ dbstop if error
 
 cd('EEG');
 pdirs = dir([pwd filesep '*EEG']);
-%%%%%% NOTE that at this stage, we sort to include ONLY relevant
-%%%%%% disappearances and reappearances, where the RESS filter (HzxLoc) matches
-%%%%%% the disap type (HzxLoc).
 
 
 job.applyRESSperppant_toCATCH=1; 
@@ -33,10 +30,11 @@ job.performLMEonRESS1 =0;
 % 
 job.construct_and_compareRawtoRESSonBGhz=0;
 
-cd('EEG');
-pdirs = dir([pwd filesep '*EEG']);
+
+
 %% load data to determine physical catch timing.
-allppants=[1,2,4,6,9:16,18]; %
+% allppants=[1,2,4,6,9:16,18]; %
+allppants=[1,2,4,6,7,9:19]; % NEW ppants.
 
 window=[-3 3];
 srate=250;
@@ -77,7 +75,7 @@ if job.applyRESSperppant_toCATCH==1
         
         %%
         
-        for id=1:4
+        for id=1:5
             
             switch id
                 case 1
@@ -104,6 +102,11 @@ if job.applyRESSperppant_toCATCH==1
                     ress_BPcatchoffsetTGs=zeros(3,48,size(dataIN,3));
                     ress_BPcatchoffsetBGs=zeros(3,48,size(dataIN,3));
                     ress_BPcatchoffsetIMs=zeros(3,48,size(dataIN,3));
+                case 5
+                    dataIN=ppant_SNREEG_invisiblecatchonset;
+                    ress_invisiblecatchonsetTGs=zeros(3,48,size(dataIN,3));
+                    ress_invisiblecatchonsetBGs=zeros(3,48,size(dataIN,3));
+                    ress_invisiblecatchonsetIMs=zeros(3,48,size(dataIN,3));
                                         
                     
             end
@@ -217,6 +220,21 @@ if job.applyRESSperppant_toCATCH==1
                                 ress_BPcatchoffsetIMs(thisfreq,:,:)= ress_ts1;
 
                             end
+                            
+                            
+                        case 5
+                            if ifreq<7  %TG or BG
+                                if mod(ifreq,2)~=0 % TG
+                                    ress_invisiblecatchonsetTGs(thisfreq,:,:)= ress_ts1;
+                                else %BG
+                                    ress_invisiblecatchonsetBGs(thisfreq,:,:)= ress_ts1;
+                                end 
+                                   
+                            else%IMs in that case.
+                                ress_invisiblecatchonsetIMs(thisfreq,:,:)= ress_ts1;
+
+                            end
+                            
                     end
                 
             end
@@ -230,7 +248,9 @@ if job.applyRESSperppant_toCATCH==1
         save(savename, 'ress_catchonsetTGs', 'ress_catchonsetBGs','ress_catchonsetIMs',...
             'ress_catchoffsetTGs', 'ress_catchoffsetBGs','ress_catchoffsetIMs',...
             'ress_BPcatchonsetTGs', 'ress_BPcatchonsetBGs','ress_BPcatchonsetIMs',...
-            'ress_BPcatchoffsetTGs', 'ress_BPcatchoffsetBGs','ress_BPcatchoffsetIMs', 'peakfreqsare')
+            'ress_BPcatchoffsetTGs', 'ress_BPcatchoffsetBGs','ress_BPcatchoffsetIMs',...
+            'ress_invisiblecatchonsetTGs','ress_invisiblecatchonsetBGs','ress_invisiblecatchonsetIMs',...
+        'peakfreqsare')
         
     end
     
