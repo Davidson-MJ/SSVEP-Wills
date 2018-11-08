@@ -33,11 +33,12 @@ job.erpimagePpantlevel=0; %using dynRESS SSVEP or SNR
 job.concaterpdataacrossppants=0; % concat above
 job.erpimageacrossppants=0;
 
-% also trx tr of catch responses.
+% also tr x tr of catch responses.
 % for catch
-job.erpimage_catchPpantlevel=0;
+job.erpimage_catchPpantlevel=0; %stores responses as 100 ydimension trial x trial
 job.concaterpdataforcatchacrossppants=0;
 job.erpimage_forcatchacrossppants=0;
+
 
 
 
@@ -53,8 +54,9 @@ param_spcgrm.Fs= [250];
 param_spcgrm.Fpass= [0 50];
 param_spcgrm.trialave=0;
 param_spcgrm.pad = 2;
-movingwin=[2,.15]; % increase to 2.5?
-% movingwin=[1,.15];
+% movingwin=[2,.15]; % increase to 2.5?
+movingwin=[2.5,.25]; % 
+
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
 % what size will the output be? (taken from inside mtspecgramc)
@@ -399,7 +401,7 @@ if job.calcppantDYNSNRperfreq==1
                             %adjust for HBW
                             k = ((param_spcgrm.tapers(1,1)));%
                             hbw = (k+1)./ (2.*[movingwin(1,1)]);
-                            neighb = 2; %hz
+                            neighb = 1; %hz to compare noisewidth with.
                             
                             %space out kernel appropriately
                             distz = dsearchn(fgrm', [hbw, neighb, neighb*2+hbw]');
@@ -474,7 +476,7 @@ timeidGRM=tgrm-3;
         end
         
         DIMSare = {'0_1', '1_0', '1_2', '2_1', '2_3', '3_2','3_4', '4_3',...
-            'BPonsets', 'catchonset', 'BPoffsets', 'catchoffset', 'invisiblecatchonset'};
+            'BPonsets', 'catch onset', 'BPoffsets', 'catchoffset', 'invisible catchonset'};
          
         
         
@@ -1188,15 +1190,7 @@ if job.erpimagePpantlevel==1
                 else % use SNR
                      
                             
-                            param_spcgrm.tapers = [1 1];
-                            param_spcgrm.Fs= [250];
-                            param_spcgrm.Fpass= [0 50];
-                            param_spcgrm.trialave=0;
-%                             movingwin=[1,.15];
-                                param_spcgrm.pad = 2;
-                            
-                            movingwin=[2,.15];
-                            
+                           
 %                             if ifreq==7
 %                                 pause
 %                             end
@@ -1372,7 +1366,7 @@ end
                 cd([basefol filesep 'Figures' filesep 'Participant summaries'])
                 %%
                 %%
-                print('-dpng', ['figure_PFI_' ctype '_summary_BPandSSVEP_' num2str(usehz) '_RESS_subj' num2str(ifol) ' snr method ' num2str(snrmethod) '.png']);
+                print('-dpng', ['figure_PFI_' ctype '_summary_BPandSSVEP_' num2str(usehz) '_RESS_subj' num2str(ifol) ' snr method ' num2str(snrmethod) '_longerwindow.png']);
                 
                 
                 switch itimezero
@@ -1419,7 +1413,7 @@ if job.concaterpdataacrossppants==1
     
     ppantsmoothing=1; % average across participants, after smoothing, or no.
     
-    for ihz=2%[1,2,7]
+    for ihz=[1,2,7]
         usehz=peakfreqsare(ihz);
         
             loadname=['PFIperformance_withSNR_' num2str(usehz) '_RESS'];
@@ -1677,7 +1671,7 @@ if job.erpimageacrossppants==1
     
     
     counter=1;
-    for hzis=[1,2]%1,2]
+    for hzis=[1,2,7]%1,2]
         cd(basefol)
         cd('EEG')
         
@@ -1692,7 +1686,19 @@ if job.erpimageacrossppants==1
                 ylimsare = [1.1 1.6];
             case 2
                 ylimsare = [2.5 2.9];
+                case 7
+                ylimsare = [0 .3];
+                
         end
+        % this is the scale of the catch image:
+% switch hzis
+%     case 1
+%         ylimsare = [.8 2];
+%     case 2
+%         ylimsare = [2.6 3.4];
+%     case 7
+%         ylimsare = [0 .8];
+% end
 %         tgrm = timeidDYN;
         %%
         for itimezero=1:2%1:2
@@ -1751,7 +1757,7 @@ if job.erpimageacrossppants==1
             figure(1)
 
             %%
-            subplot(3,2,itimezero)
+            subplot(4,2,itimezero)
             colormap('jet')
             %         [sortedRTs, cid] = sort(acrRTs, 'descend');
             
@@ -1791,11 +1797,15 @@ if job.erpimageacrossppants==1
             %                 plot([0 0] , ylim, ['k:'], 'linewidth', 1)
             axis square
             %%
-            xlabel(['Time from ' ctype])
+%             xlabel(['Time from ' ctype])
             
             %SNR
+            if hzis~=7
             placeis= itimezero+2 + 2*(hzis-1);
-            subplot(3,2, placeis);
+            else
+                placeis = itimezero+6;
+            end
+            subplot(4,2, placeis);
             
             %reorder SNR
             acrSNRsort=acrSNR;
@@ -1814,7 +1824,11 @@ if job.erpimageacrossppants==1
 
             ylabel(c, {['RESS log(SNR)']})
 
-            title([num2str(usehz) 'Hz (' num2str(hzis) 'f)'])
+            if hzis~=7
+            title([num2str(usehz) ' Hz (f' num2str(hzis) ')'])
+            else
+                title([num2str(usehz) ' Hz (f2-f1)'])
+            end
 %             title(['BG ' num2str(hzis) 'F'])
             
             hold on
@@ -1850,9 +1864,11 @@ if job.erpimageacrossppants==1
             %                 ylabel('mean SNR')
             %                 axis tight
             %                 plot([0 0] , ylim, ['k:'], 'linewidth', 1)
+            if hzis==7
             xlabel(['Time from ' ctype])
+            end
             ylabel({'Normalized'; 'trial count'})
-%                 caxis([ylimsare])
+                caxis([ylimsare])
                 axis square
                 
             set(gca, 'fontsize', 20)
@@ -1871,7 +1887,8 @@ if job.erpimageacrossppants==1
     %%
     shg
     %%
-     print('-dpng', ['PFI SNR summary BG Hz, ' ctype '.png'])
+    cd([basefol filesep 'Figures' filesep 'GFX PFI trial by trial'])
+     print('-dpng', ['PFI SNR summary all.png'])
 end
 
 if job.erpimage_catchPpantlevel==1
@@ -2321,7 +2338,7 @@ if job.concaterpdataforcatchacrossppants==1
             loadname=['Catch_performance_withSNR_' num2str(usehz) '_RESS'];
         
    storeacrossPpant_catchEVENTS_BPs = zeros(length(allppants), 5, 100, 361);
-   storeacrossPpant_catchEVENTS_SNR = zeros(length(allppants), 5, 100, Nt);
+   storeacrossPpant_catchEVENTS_SNR = zeros(length(allppants), 5, 100, length(Nt));
         icounter=1;
         
         for ippant = allppants
@@ -2576,7 +2593,7 @@ if job.erpimage_forcatchacrossppants==1
      for itype=[1:5]
          
          clf
-    for hzis=[1,2]%1,2]
+    for hzis=[1,2,7]%1,2]
         cd(basefol)
         cd('EEG')
         
@@ -2588,9 +2605,11 @@ if job.erpimage_forcatchacrossppants==1
                
         switch hzis
             case 1
-                ylimsare = [1.1 1.6];
+                ylimsare = [.8 2];
             case 2
-                ylimsare = [2.5 2.9];
+                ylimsare = [2.6 3.4];
+                case 7
+                ylimsare = [0 .8];
         end
 %         tgrm = timeidDYN;
         %%
@@ -2618,12 +2637,12 @@ if job.erpimage_forcatchacrossppants==1
             acrSNR=squeeze(nanmean(useSNR,1));
 %             acrSNR=squeeze(nanmean(useSNR(21,:,:),1));
 %%            
-figure(10)
-for i=1:size(useSNR,1);
-    subplot(4,4,i);
-    imagesc(squeeze(useSNR(i,:,:)));
-    
-end
+% figure(10)
+% for i=1:size(useSNR,1);
+%     subplot(4,4,i);
+%     imagesc(squeeze(useSNR(i,:,:)));
+%     
+% end
   %%          
             
             %sort across all
@@ -2633,7 +2652,7 @@ end
             
 
             %%
-            subplot(3,1,1)
+            subplot(4,1,1)
             colormap('viridis')
             %         [sortedRTs, cid] = sort(acrRTs, 'descend');
             
@@ -2673,10 +2692,14 @@ end
             %                 plot([0 0] , ylim, ['k:'], 'linewidth', 1)
             axis square
             %%
-            xlabel(['Time from ' chtype])
+%             xlabel(['Time from ' chtype])
             
            
-            subplot(3,1, 1+hzis);
+            if hzis~=7
+            subplot(4,1, 1+hzis);
+            else
+            subplot(4,1, 4);
+            end
             
             %reorder SNR
             acrSNRsort=acrSNR;
@@ -2694,8 +2717,11 @@ end
             c=colorbar;
 
             ylabel(c, {['RESS log(SNR)']})
-
-            title([num2str(usehz) 'Hz (' num2str(hzis) 'f)'])
+if hzis~=7
+            title([num2str(usehz) ' Hz (f' num2str(hzis) ')'])
+else
+            title([num2str(usehz) ' Hz (f2-f1)'])
+end
 %             title(['BG ' num2str(hzis) 'F'])
             
             hold on
@@ -2705,37 +2731,14 @@ end
             set(gca, 'fontsize', 15, 'ytick', [])
             %                 subplot(4,2,8)
             %
-%             %plot across ppant trace
-%             ppantMeanSNR= squeeze(mean(useSNR,2));
-%             
-%             %adjust standard error as per COusineau(2005)
-%             %confidence interval for within subj designs.
-%             % y = x - mXsub + mXGroup,
-%             x = ppantMeanSNR;
-%             
-%             mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
-%             mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
-%             
-%             %for each observation, subjtract the subj average, add
-%             %the group average.
-%             NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
-%             
-%             %             %compute new stErr %which version?
-%             %             stE = std(NEWdata)/sqrt(size(x,1));
-%             %
-%             %                 shadedErrorBar(tgrm-3, mean(ppantMeanSNR,1),stE,'k',[])
-%             %                 set(gca, 'fontsize', 15)
-%             %                 hold on;
-%             %                 %%
-            %
-            %                 ylabel('mean SNR')
-            %                 axis tight
-            %                 plot([0 0] , ylim, ['k:'], 'linewidth', 1)
-            xlabel(['Time from ' chtype])
+%      
+if hzis==7
+    xlabel(['Time from ' chtype])
+end
             ylabel({'Normalized'; 'trial count'})
-%                 caxis([ylimsare])
+                caxis([ylimsare])
                 axis square
-                
+                axis tight
             set(gca, 'fontsize', 20)
             cd(basefol)            
             cd('Figures')
@@ -2762,8 +2765,8 @@ end
 
 if job.BPandSSVEPtimecourseacrossppants_group==1
 
-
-   getelocs
+    
+    getelocs
     
     rmvbase=0;
     checksigON=0;
@@ -2775,10 +2778,16 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
     cd(basefol)
     cd('EEG')
     cd('GFX_EEG-RESS')
-    %%
+    %
     %     cd('newplots-MD')
-    colsare={'b', 'k',[],[],[],[],'r'}; % blue for tg, black for BG.
-    for hzis=2%[1,2]%
+    colsare={'b' , 'k',[],[],[],[],'m'}; % blue for tg, black for BG.
+    hzare={'TG(f1)' , 'BG(f2)',[],[],[],[],'IM(f2-f1)'}; % blue for tg, black for BG.
+    linetypes={'--', '-', [],[],'--'};
+    legendis=[];
+    lgc=1;
+    clf
+    clearvars yl;
+    for hzis=[1,2]%[1,2]%
         usehz=peakfreqsare(hzis);
         
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
@@ -2787,10 +2796,11 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
         
         tbase = timeidDYN;
         col=colsare{hzis};
+        hzp= hzare{hzis};
         
         ttestdata=[];
         %         legendprint=[];
-        for itimezero=1:2
+        for itimezero=3%1:2
             
             switch itimezero
                 case 1
@@ -2802,7 +2812,7 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
                     %                     chtype='button press';
                     
                     %                     col=[0 .5 0];
-                    lint='-';
+                    linet='--';
                 case 2
                     
                     useBP=storeacrossPpant_offsetBP;
@@ -2812,311 +2822,314 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
                     
                     
                     chtype='target visible';
-                    chtype='time from subjective report';
+%                     chtype='time from subjective report';
                     %                     chtype='button release';
                     
                     
                     %                     col='r';
                     bsrem=[-3 -1];
-                    lint=':';
+                    linet='-';
+                    
+                case 3
+                    useSNR=storeacrossPpant_onsetSNR+storeacrossPpant_offsetSNR;
+                    chtype = 'subjective report';
+                    linet=':';
                     
             end
             
+          figure(1);
             
-            %%
-            %
-            %SNR
-            figure(1);
-            %
+            used=useSNR;
             
-            for ip=2%1:2
-                switch ip
-                    case 1
-                        used=useBP;
-                        basep=1;
-                        col='b';
-                        lint='-';
-                        ylimsare = [0 2.5];
-                    case 2
-                        used=useSNR;
-                        basep=3;
-                        if hzis==1
+            hold on
+            
+            
+            %plot across ppant trace
+            ppantMeanSNR= squeeze(mean(used,2));
+%             subplot(2,1,itimezero);
+%             plot(ppantMeanSNR');
+            
+            
+            %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            
+            x = ppantMeanSNR;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+            
+            stE = std(NEWdata)/sqrt(length(allppants));
+            
+            
+            if rmvbase==1
+                ppantMeanSNR=ppantMeanSNR-mean(ppantMeanSNR(:));
+            end
+            %plot
+                sh=shadedErrorBar(timeidDYN, mean(ppantMeanSNR,1),stE,[],[1]);
+                
+            sh.mainLine.LineWidth=3;
+            
+            sh.mainLine.Color = col;
+            sh.mainLine.LineStyle=linet;
+            sh.patch.FaceColor = col;
+            sh.edge(1).Color = col;
+            sh.edge(2).Color = col;
+                      %
+            
+            xlabel(['Time from ' chtype ' [s]'])%           
+%             xlabel(['Time from button release [s]'])
+
+if rmvbase~=1
+    ylabel({['RESS log(SNR), ' hzp]})
+end
+            if itimezero==3
+                
+                ylabel({['\Delta RESS log(SNR)']})
+                
+            else
+                ylabel({['mean subtracted'];['RESS log(SNR)']})
+               
+            end
+            
+            
+            
+            set(gca, 'fontsize', 25)
+            
+       
+            
+            
+            
+            set(gcf, 'color', 'w')
+            
+            %store output for legend/stats
+            ttestdata(lgc,:,:) = ppantMeanSNR;
+            legendprint(lgc)=sh.mainLine;
+            %legend based on type
+            legendis = [legendis {chtype}];
+            
+            plcount=plcount+1;
+            
+             
+            lgc=lgc+1;
+            
+        end % by type
+        %legend based on Hz
+%             legendis = [legendis {chtype}];
+      
+    end
+         
+%             xlim([timeidDYN(1) timeidDYN(end)])
+               axis tight
+            if rmvbase==1
+                ylim([-.1 .15])
+                 hold on;
+                plot(xlim, [0 0], ['k:'])
+            end
+            if itimezero==3                
+                plot(xlim, [0 0], ['k:'])
+            end
+                
+    %%
+         
+            
+    % %%%%%%%% END OF PLOTTING, SIG TESTS BELOW
+    if checksigON==1
+        %check for sig
+        pvals=zeros(1,size(ttestdata,3));
+        tvals=zeros(1,size(ttestdata,3));
+        for itime = 1:size(ttestdata,3)
+            
+            try [h,pvals(itime),~,stat]=ttest(ttestdata(1,:,itime), ttestdata(2,:,itime));
+                shuffType=1;
+            catch
+                [h,pvals(itime),~,stat]=ttest(ttestdata(plcount-1,:,itime)); %compares to zero.
+                shuffType=2; %whether or not to skip the non-parametric test for sig.
+            end
+            
+            tvals(itime)= stat.tstat;
+        end
+        sigs=find(pvals<.05);
+        %
+        %             %perform cluster based correction.
+        if length(sigs)>2 &&checkcluster==1
+            % find biggest cluster:
+            %finds adjacent time points
+            vect1 = diff(sigs);
+            v1 = (vect1(:)==1);
+            d = diff(v1);
+            clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
+            %grab largest
+            %                 ignore bad points.
+            
+            
+            % find biggest cluster:
+            %finds adjacent time points
+            sigs = find(pvals<.05);
+            
+            vect1 = diff(sigs);
+            v1 = (vect1(:)==1);
+            d = diff(v1);
+            clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
+            [~,maxClust] = max(clusterSTandEND(:,2)-clusterSTandEND(:,1));
+            
+            %
+            for icl=1:size(clusterSTandEND,1)
+                
+                %start and end are now:
+                % change icl to maxClust if we only want the largest
+                % cluster.
+                STC=sigs(clusterSTandEND(icl,1));
+                ENDC=sigs(clusterSTandEND(icl,2)+1);
+                checktimes =STC:ENDC;
+                observedCV = sum(abs(tvals(checktimes)));
+                % now shuffle condition labels to see if this cluster is
+                % sig (compared to chance).
+                
+                
+                
+                %all trials
+                alltr=reshape(ttestdata, [length(allppants)*2, length(Nt)]);
+                alltrialsvec = 1:size(alltr,1);
+                
+                nshuff=2000;
+                
+                sumTestStatsShuff = zeros(1,nshuff);
+                for irand = 1:nshuff
+                    
+                    if shuffType==1 %null is that no condition differences.
+                        
+                        
+                        shD=zeros(size(ttestdata));
+                        %since this is a within subjects design, we permute
+                        %the subjet specific averages within each subject
+                        %(as per Maris & Oostenveld (2007).
+                        
+                        % for each subject, randomly permute the averages.
+                        %(Dsub1cond1,Datasub1cond2)
+                        for ippant = 1:size(ttestdata,2)
                             
-                            lgc=1;
-                        else
-                            lgc=1;
+                            if mod(randi(100),2)==0 %if random even number
+                                shD(1,ippant,:) = ttestdata(1,ippant,:); % all time points.
+                                shD(2,ippant,:) = ttestdata(2,ippant,:); % all time points.
+                            else
+                                shD(1,ippant,:) = ttestdata(2,ippant,:); % all time points.
+                                shD(2,ippant,:) = ttestdata(1,ippant,:); % all time points.
+                            end
+                            
+                            %                             shD(ipartition,ippant,:) = pdata;
                         end
                         
-                        ylimsare= [ 1.5 2.7];
-                end
-                
-                placeme = basep+ (1*itimezero-1);
-                
-                %                 subplot(2,2,3)
-                
-                
-                hold on
-                
-                %
-                %             if rmvbase==1
-                %                 tmp = zeros(size(useSNR));
-                %                 tIND = dsearchn(tbase', [bsrem]');
-                %             for ippant=1:size(useSNR,1)
-                %                 for itrial = 1:size(useSNR,2)
-                %                     tbase = squeeze(nanmean(useSNR(ippant,itrial,tIND(1):tIND(2)),3));
-                %                     rbase = repmat(tbase, [1  size(useSNR,3)]);
-                %
-                %                     tmp(ippant,itrial,:) =squeeze(useSNR(ippant,itrial,:))' - rbase;
-                %                 end
-                %             end
-                %             useSNR=tmp;
-                %             end
-                
-                %plot across ppant trace
-                ppantMeanSNR= squeeze(mean(used,2));
-                
-                %adjust standard error as per COusineau(2005)
-                %confidence interval for within subj designs.
-                % y = x - mXsub + mXGroup,
-                if ip~=1
-                    x = ppantMeanSNR;
-                    
-                    mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
-                    mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
-                    
-                    %for each observation, subjtract the subj average, add
-                    %the group average.
-                    NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
-                    
-                    %             %compute new stErr %which version?
-                    
-                    
-                else
-                    NEWdata=ppantMeanSNR;
-                end
-                stE = std(NEWdata)/sqrt(length(allppants));
-                
-                if ip==1
-                    sh=shadedErrorBar(-3:1/60:3, mean(ppantMeanSNR,1),stE,[lint],[1]);
-                    ylabel(['Buttons pressed'])
-                else
-                    sh=shadedErrorBar(timeidDYN, mean(ppantMeanSNR,1),stE,[lint],[1]);
-                    ylabel({['RESS log(SNR)']})
-                end
-                sh.mainLine.LineWidth=3;
-                
-                sh.mainLine.Color = col;
-                sh.patch.FaceColor = col;
-                sh.edge(1).Color = col;
-                sh.edge(2).Color = col;
-                
-                %                 if hzis==2
-                %                     sh.mainLine.Color= 'k';
-                %                 end
-                set(gca, 'fontsize', 15)
-                hold on;
-                %                 %%
-                %
-                
-                
-                
-                
-                %             title({[num2str(usehz) ' Hz SSVEP']})
-                xlabel(['Time from ' chtype ' [s]'])
-                %             xlabel('Time from perceptual report')
-                set(gca, 'fontsize', 25)
-                
-                
-                xlim([timeidDYN(1) timeidDYN(end)])
-                ylim( [ylimsare])
-                
-                
-                
-                
-                
-                set(gcf, 'color', 'w')
-                
-                if ip==2
-                    ttestdata(itimezero,:,:) = ppantMeanSNR;
-                    legendprint(lgc)=sh.mainLine;
-                end
-                
-                plcount=plcount+1;
-                
-                
-                %place legend
-                if hzis==2 && ip==2
-                    if itimezero==1
-                        %                 lg=legend([legendprint(1) legendprint(2)], {'20 Hz', '40 Hz'});
+                    else %null is that there are no temporal coincident sig values.
+                        for ipartition = 1:2
+                            for ippant = 1:size(ttestdata,2)
+                                for itime=1:length(checktimes)
+                                    
+                                    %take random timepoint.
+                                    pdata = ttestdata(1,ippant, randi(size(ttestdata,3)));
+                                    
+                                    
+                                    shD(ipartition,itime,ippant) = pdata;
+                                end
+                            end
+                        end
                     end
-                    %             set(lg, 'location', 'NorthEast')
                     
-                end
-                
-            end
-            
-            
-            
-          axis tight  
-        end
-%% %%%%%%%% END OF PLOTTING, SIG TESTS BELOW
-        if checksigON==1
-            %check for sig
-            pvals=zeros(1,size(ttestdata,3));
-            tvals=zeros(1,size(ttestdata,3));
-            for itime = 1:size(ttestdata,3)
-                
-                try [h,pvals(itime),~,stat]=ttest(ttestdata(1,:,itime), ttestdata(2,:,itime));
-                    shuffType=1;
-                catch
-                    [h,pvals(itime),~,stat]=ttest(ttestdata(plcount-1,:,itime)); %compares to zero.
-                    shuffType=2; %whether or not to skip the non-parametric test for sig.
-                end
-                
-                tvals(itime)= stat.tstat;
-            end
-            sigs=find(pvals<.05);
-            %
-            %             %perform cluster based correction.
-            if length(sigs)>2 &&checkcluster==1
-                % find biggest cluster:
-                %finds adjacent time points
-                vect1 = diff(sigs);
-                v1 = (vect1(:)==1);
-                d = diff(v1);
-                clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
-                %grab largest
-                %                 ignore bad points.
+                    %                     tvalspertimepoint = zeros(1,length(checktimes));
+                    %%
+                    % figure(3); clf; plot(squeeze(mean(shD(1,:,:),2))); hold on
+                    %                     plot(squeeze(mean(shD(2,:,:),2))); ylim([2.4 3])
+                    %%
+                    testdata = squeeze(shD(1,:,:)) - squeeze(shD(2,:,:));
+                    p=[];
+                    for itest = 1:length(checktimes)
+                        
+                        [~, p(itest), ~,stat]= ttest(testdata(:,checktimes(itest)));
+                        
+                        tvalspertimepoint(1,itest) = stat.tstat;
+                    end
+                    
+                    % the null hypothesis is that these prob distributions
+                    % are exchangeable, so retain this permutation cluster-
+                    % level stat.
+                    sumTestStatsShuff(1,irand) = sum((tvalspertimepoint));
+                    
+                    
+                end %repeat nshuff times
                 
                 
-                % find biggest cluster:
-                %finds adjacent time points
-                sigs = find(pvals<.05);
+                %is the observed greater than CV?
+                % plot histogram:
+                %%
+                figure(2);
                 
-                vect1 = diff(sigs);
-                v1 = (vect1(:)==1);
-                d = diff(v1);
-                clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
-                [~,maxClust] = max(clusterSTandEND(:,2)-clusterSTandEND(:,1));
+                clf
+                
+                
+                H=histogram(abs(sort(sumTestStatsShuff)));
+                % fit CDF
+                cdf= cumsum(H.Data)/ sum(H.Data);
+                %the X values (actual CV) corresponding to .01
+                [~,cv05uncorr] = (min(abs(cdf-.95)));
+                %                 [~,cv01uncorr] = (min(abs(cdf-.99)));
+                %                 [~,cv001uncorr] = (min(abs(cdf-.999)));
+                hold on
+                pCV=plot([observedCV observedCV], ylim, ['r-']);
+                
+                p05=plot([H.Data(cv05uncorr) H.Data(cv05uncorr)], ylim, ['k:']);
+                %                 plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k:']);
+                %                 plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k:']);
+                legend([pCV p05], {['observed'] ['95%'] })
                 
                 %%
-                for icl=1:size(clusterSTandEND,1)
+               
+                
+                if observedCV>H.Data(cv05uncorr)
+                    title(['sum tvals = ' num2str(observedCV)]);
+                    %              title('Spatial Cluster  Significant!')
+                    %                     timeidDYN=tgrm-3;
+                  
                     
-                    %start and end are now:
-                    % change icl to maxClust if we only want the largest
-                    % cluster.
-                    STC=sigs(clusterSTandEND(icl,1));
-                    ENDC=sigs(clusterSTandEND(icl,2)+1);
-                    checktimes =STC:ENDC;
-                    observedCV = sum(abs(tvals(checktimes)));
-                    % now shuffle condition labels to see if this cluster is
-                    % sig (compared to chance).
-                    sumTestStatsShuff = zeros(1,2000);
-                    
-                    for irand = 1:2000
-                        %testing the null that it isn't mismatched - matched at time 2
-                        % which creates a diff. so select from either!
-                        shD= zeros(2,length(checktimes),size(ttestdata,2));
-                        
-                        %change shuffle parameters based on test of
-                        %interest. (ie between conditions, or temporal
-                        %null).
-                        if shuffType==1 %null is that no condition differences.
-                            for ipartition = 1:2
-                                for ippant = 1:size(ttestdata,2)
-                                    for itime=1:length(checktimes)
-                                        
-                                        if mod(randi(100),2)==0 %if random even number
-                                            pdata = ttestdata(1,randi(size(ttestdata,2)), checktimes(itime)); %select both chans
-                                        else
-                                            pdata = ttestdata(2,randi(size(ttestdata,2)), checktimes(itime));
-                                        end
-                                        
-                                        shD(ipartition,itime,ippant) = pdata;
-                                    end
-                                end
-                            end
-                        else %null is that there are no temporal coincident sig values.
-                            for ipartition = 1:2
-                                for ippant = 1:size(ttestdata,2)
-                                    for itime=1:length(checktimes)
-                                        
-                                        %take random timepoint.
-                                        pdata = ttestdata(1,ippant, randi(size(ttestdata,3)));
-                                        
-                                        
-                                        shD(ipartition,itime,ippant) = pdata;
-                                    end
-                                end
-                            end
+                    for itime=checktimes
+                        figure(1);
+                        if ~exist('yl', 'var')
+                            yl=get(gca, 'ylim');
                         end
-                        %now compute difference between out hypothetical topoplots,
-                        % and test for sig, checking the accumulated test statistic at our
-                        % times of interest
-                        tvalspertimepoint = zeros(1,length(checktimes));
+                        hold on
                         
-                        testdata = squeeze(shD(1,:,:)) - squeeze(shD(2,:,:));
                         
-                        for itest = 1:length(checktimes) %test each time point
-                            
-                            [~, p, ~,stat]= ttest(testdata(itest,:));
-                            
-                            tvalspertimepoint(1,itest) = stat.tstat;
-                        end
-                        
-                        sumTestStatsShuff(1,irand) = sum(abs(tvalspertimepoint));
-                    end %repeat nshuff times
-                    
-                    
-                    %is the observed greater than CV?
-                    % plot histogram:
-                    figure(2);
-                    
-                    clf
-                    
-                    
-                    H=histogram(abs(sort(sumTestStatsShuff)));
-                    % fit CDF
-                    cdf= cumsum(H.Data)/ sum(H.Data);
-                    %the X values (actual CV) corresponding to .01
-                    [~,cv05uncorr] = (min(abs(cdf-.95)));
-                    [~,cv01uncorr] = (min(abs(cdf-.99)));
-                    [~,cv001uncorr] = (min(abs(cdf-.999)));
-                    hold on
-                    pCV=plot([observedCV observedCV], ylim, ['r-']);
-                    
-                    p05=plot([H.Data(cv05uncorr) H.Data(cv05uncorr)], ylim, ['k:']);
-                    plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k:']);
-                    plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k:']);
-                    legend([pCV p05], {['observed'] ['p01'] })
-                    
-                    %%
-                    if observedCV>H.Data(cv05uncorr)
-                        title(['sum tvals = ' num2str(observedCV)]);
-                        %              title('Spatial Cluster  Significant!')
-                        timeidDYN=tgrm-3;
-                        for itime=checktimes
-                            figure(1);
-                            hold on
-                            plot(timeidDYN(itime), sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', sh.mainLine.Color)
-                            %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'm')
-                        end
+                        plot(timeidDYN(5), yl(1)-.1*(diff(yl)), ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
+                        plot(timeidDYN(itime), yl(1)-.1*(diff(yl)), ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
+                        %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'm')
                     end
-                    
-                    %
                 end
+                
+                %
             end
-            
         end
-        %%
+     
+            %% adjust ylims.
+    yl=get(gca, 'ylim');
+    %extend by 10% (keeps sig points in relative space).
+    dyl=diff(yl)*.1;
+    ylim([yl(1)-dyl yl(2)])
+
     end
-  
-    %%
-    print('-dpng', ['PFI trace Bground SSVEP summary, during ' num2str(chtype) '.png'])
+    
+    
+    
+
     
     %%
-    
-    % print('-dpng', ['PFI trace Bground SSVEP summary, during both, 40Hz.png'])
+    cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
+    %
+%     print('-dpng', ['PFI trace SSVEP summary, for msubtracted PFIreap.png'])
+    print('-dpng', ['PFI trace SSVEP summary, for PFIdisap-reap.png'])
 end
 
 if job.BPandSSVEPtimecourseacrossppants_group_CATCH==1
@@ -3128,313 +3141,355 @@ if job.BPandSSVEPtimecourseacrossppants_group_CATCH==1
     checksigON=0;
     checkcluster=0;
     
+    
+    
+    %perform subtraction = catch onset ioffset
+    catchdiff=1;
+    
     clf
     plcount=1;
     legendprint=[];
     cd(basefol)
     cd('EEG')
     cd('GFX_EEG-RESS')
-    %%
+    %
+    clf
     %     cd('newplots-MD')
-    colsare={'b', 'k',[],[],[],[],'r'}; % blue for tg, black for BG.
-    for hzis=1%[1,2]%
+    colsare={'b' , 'k',[],[],[],[],'m'}; % blue for tg, black for BG.
+    hzare={'TG(f1)' , 'BG(f2)',[],[],[],[],'IM(f2-f1)'}; % blue for tg, black for BG.
+    linetypes={'--', '-', '--','-','--'};
+    legendis=[];
+    lgc=1;
+    for hzis=[1,2]%[1,2]%
         usehz=peakfreqsare(hzis);
         
         load(['GFX_Catch_performance_withSNR_' num2str(usehz) '_min0_RESS'])
-        lint='-';
         
+        DIMSare{5} = 'invisible catch onset';
         
         tbase = timeidDYN;
         col=colsare{hzis};
-        
-        ttestdata=[];
+        hzp= hzare{hzis};
+        ttestdata=zeros(2, length(allppants), length(Nt));
         %         legendprint=[];
-        for itype=[1,2];%,3,4,5]%:5
+        for itype=[3]%,4];%[1,5];%,3,4,5]%:5 6 
+            
+            linet=linetypes{itype};
+            useBP=squeeze(storeacrossPpant_catchEVENTS_BPs(:,itype,:,:));
+            useSNR=squeeze(storeacrossPpant_catchEVENTS_SNR(:,itype,:,:));
             
             
-                    useBP=squeeze(storeacrossPpant_catchEVENTS_BPs(:,itype,:,:));
-                    useSNR=squeeze(storeacrossPpant_catchEVENTS_SNR(:,itype,:,:));
-                    
-                    
-                    %also take mean across trials (x100).
-%                     useBP=squeeze(mean(useBP,2));
-%                     useSNR=squeeze(mean(useSNR,2));
-                    
-                    chtype=DIMSare{itype};
-                    %                     chtype='button press';
+            %also take mean across trials (x100).
+            %                     useBP=squeeze(mean(useBP,2));
+            %                     useSNR=squeeze(mean(useSNR,2));
             
+            chtype=DIMSare{itype};
+            %                     chtype='button press';
             
+            if catchdiff==1 %subtract offset from onset.
+            
+                            useSNR1 =squeeze(storeacrossPpant_catchEVENTS_SNR(:,itype,:,:));
+                            useSNR2 =squeeze(storeacrossPpant_catchEVENTS_SNR(:,itype+1,:,:));
+                            useSNR=useSNR1-useSNR2;
+                            
+
+                linet=':';
+                
+            end
+                
             %%
             %
             %SNR
             figure(1);
-            %
             
-            for ip=2
-                switch ip
-                    case 1
-                        used=useBP;
-                        basep=1;
-                        col='b';
-                        lint='-';
-                        ylimsare = [0 2.5];
-                    case 2
-                        used=useSNR;
-                        basep=3;
-                        if hzis==1
-                            
-                            lgc=1;
-                        else
-                            lgc=1;
-                        end
-                        
-                        ylimsare= [ 1.5 2.7];
-                end
-                
-                
-                
-                %                 subplot(2,2,3)
-                
-                
-                hold on
-                
+            used=useSNR;
             
-                %plot across ppant trace
-                ppantMeanSNR= squeeze(mean(used,2));
-                
-                %adjust standard error as per COusineau(2005)
-                %confidence interval for within subj designs.
-                % y = x - mXsub + mXGroup,
-                if ip~=1
-                    x = ppantMeanSNR;
-                    
-                    mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
-                    mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
-                    
-                    %for each observation, subjtract the subj average, add
-                    %the group average.
-                    NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
-                    
-                    %             %compute new stErr %which version?
-                    
-                    
-                else
-                    NEWdata=ppantMeanSNR;
-                end
-                stE = std(NEWdata)/sqrt(length(allppants));
-                
-                if ip==1
-                    sh=shadedErrorBar(-3:1/60:3, mean(ppantMeanSNR,1),stE,[lint],[1]);
-                    ylabel(['Buttons pressed'])
-                else
-                    sh=shadedErrorBar(timeidDYN, mean(ppantMeanSNR,1),stE,[],[1]);
-                    ylabel({['RESS log(SNR)']})
-                end
-                sh.mainLine.LineWidth=3;
-                
-                sh.mainLine.Color = col;
-                sh.patch.FaceColor = col;
-                sh.edge(1).Color = col;
-                sh.edge(2).Color = col;
-                
-                %                 if hzis==2
-                %                     sh.mainLine.Color= 'k';
-                %                 end
-                set(gca, 'fontsize', 15)
-                hold on;
-                %           
-                %             title({[num2str(usehz) ' Hz SSVEP']})
-                xlabel(['Time from ' chtype ' [s]'])
-                %             xlabel('Time from perceptual report')
-                set(gca, 'fontsize', 25)
-                
-                
-                xlim([timeidDYN(1) timeidDYN(end)])
-%                 ylim( [ylimsare])
-                axis tight
-                
-                
-                
-                
-                set(gcf, 'color', 'w')
-                
-                if ip==2
-%                     ttestdata(itimezero,:,:) = ppantMeanSNR;
-                    legendprint(lgc)=sh.mainLine;
-                end
-                
-                plcount=plcount+1;
-                
-                
-                %place legend
-                if hzis==2 && ip==2
-                    
-%                                         lg=legend([legendprint(1) legendprint(2)], {DIMSare(hzis)});
-                    
-                    %             set(lg, 'location', 'NorthEast')
-                    
-                end
-                
+            hold on
+            
+            
+            %plot across ppant trace
+            ppantMeanSNR= squeeze(mean(used,2));
+            
+            %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            
+            x = ppantMeanSNR;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+            
+            stE = std(NEWdata)/sqrt(length(allppants));
+            
+            
+            
+            if rmvbase==1
+                % normalise around zero.
+                ppantMeanSNR = ppantMeanSNR - mean(ppantMeanSNR(:));
             end
             
-            
-            
-          axis tight  
-        end
-%% %%%%%%%% END OF PLOTTING, SIG TESTS BELOW
-        if checksigON==1
-            %check for sig
-            pvals=zeros(1,size(ttestdata,3));
-            tvals=zeros(1,size(ttestdata,3));
-            for itime = 1:size(ttestdata,3)
-                
-                try [h,pvals(itime),~,stat]=ttest(ttestdata(1,:,itime), ttestdata(2,:,itime));
-                    shuffType=1;
-                catch
-                    [h,pvals(itime),~,stat]=ttest(ttestdata(plcount-1,:,itime)); %compares to zero.
-                    shuffType=2; %whether or not to skip the non-parametric test for sig.
-                end
-                
-                tvals(itime)= stat.tstat;
-            end
-            sigs=find(pvals<.05);
-            %
-            %             %perform cluster based correction.
-            if length(sigs)>2 &&checkcluster==1
-                % find biggest cluster:
-                %finds adjacent time points
-                vect1 = diff(sigs);
-                v1 = (vect1(:)==1);
-                d = diff(v1);
-                clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
-                %grab largest
-                %                 ignore bad points.
-                
-                
-                % find biggest cluster:
-                %finds adjacent time points
-                sigs = find(pvals<.05);
-                
-                vect1 = diff(sigs);
-                v1 = (vect1(:)==1);
-                d = diff(v1);
-                clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
-                [~,maxClust] = max(clusterSTandEND(:,2)-clusterSTandEND(:,1));
-                
-                %%
-                for icl=1:size(clusterSTandEND,1)
-                    
-                    %start and end are now:
-                    % change icl to maxClust if we only want the largest
-                    % cluster.
-                    STC=sigs(clusterSTandEND(icl,1));
-                    ENDC=sigs(clusterSTandEND(icl,2)+1);
-                    checktimes =STC:ENDC;
-                    observedCV = sum(abs(tvals(checktimes)));
-                    % now shuffle condition labels to see if this cluster is
-                    % sig (compared to chance).
-                    sumTestStatsShuff = zeros(1,2000);
-                    
-                    for irand = 1:2000
-                        %testing the null that it isn't mismatched - matched at time 2
-                        % which creates a diff. so select from either!
-                        shD= zeros(2,length(checktimes),size(ttestdata,2));
-                        
-                        %change shuffle parameters based on test of
-                        %interest. (ie between conditions, or temporal
-                        %null).
-                        if shuffType==1 %null is that no condition differences.
-                            for ipartition = 1:2
-                                for ippant = 1:size(ttestdata,2)
-                                    for itime=1:length(checktimes)
-                                        
-                                        if mod(randi(100),2)==0 %if random even number
-                                            pdata = ttestdata(1,randi(size(ttestdata,2)), checktimes(itime)); %select both chans
-                                        else
-                                            pdata = ttestdata(2,randi(size(ttestdata,2)), checktimes(itime));
-                                        end
-                                        
-                                        shD(ipartition,itime,ippant) = pdata;
-                                    end
-                                end
-                            end
-                        else %null is that there are no temporal coincident sig values.
-                            for ipartition = 1:2
-                                for ippant = 1:size(ttestdata,2)
-                                    for itime=1:length(checktimes)
-                                        
-                                        %take random timepoint.
-                                        pdata = ttestdata(1,ippant, randi(size(ttestdata,3)));
-                                        
-                                        
-                                        shD(ipartition,itime,ippant) = pdata;
-                                    end
-                                end
-                            end
-                        end
-                        %now compute difference between out hypothetical topoplots,
-                        % and test for sig, checking the accumulated test statistic at our
-                        % times of interest
-                        tvalspertimepoint = zeros(1,length(checktimes));
-                        
-                        testdata = squeeze(shD(1,:,:)) - squeeze(shD(2,:,:));
-                        
-                        for itest = 1:length(checktimes) %test each time point
-                            
-                            [~, p, ~,stat]= ttest(testdata(itest,:));
-                            
-                            tvalspertimepoint(1,itest) = stat.tstat;
-                        end
-                        
-                        sumTestStatsShuff(1,irand) = sum(abs(tvalspertimepoint));
-                    end %repeat nshuff times
-                    
-                    
-                    %is the observed greater than CV?
-                    % plot histogram:
-                    figure(2);
-                    
-                    clf
-                    
-                    
-                    H=histogram(abs(sort(sumTestStatsShuff)));
-                    % fit CDF
-                    cdf= cumsum(H.Data)/ sum(H.Data);
-                    %the X values (actual CV) corresponding to .01
-                    [~,cv05uncorr] = (min(abs(cdf-.95)));
-                    [~,cv01uncorr] = (min(abs(cdf-.99)));
-                    [~,cv001uncorr] = (min(abs(cdf-.999)));
+            %plot
+                sh=shadedErrorBar(timeidDYN, mean(ppantMeanSNR,1),stE,[],[1]);
+                if rmvbase~=1
+                ylabel({['RESS log(SNR), ' hzp]})
+                else
+                    ylabel({['mean subtracted'];['RESS log(SNR)']})
                     hold on
-                    pCV=plot([observedCV observedCV], ylim, ['r-']);
+                    plot([xlim ], [0 0], ['k:'])
+                end
+            
+                if catchdiff==1;
+                       ylabel({['\Delta RESS log(SNR)']})
+                end
+                
+                
+            sh.mainLine.LineWidth=3;
+            if itype==5
+                %change color of shading, invisible catches.
+                col=['r'];
+            end
+            sh.mainLine.Color = col;
+            sh.mainLine.LineStyle=linet;
+            sh.patch.FaceColor = col;
+            sh.edge(1).Color = col;
+            sh.edge(2).Color = col;
+                      %
+            %             title({[num2str(usehz) ' Hz SSVEP']})
+            xlabel(['Time from ' chtype ' [s]'])
+            xlabel(['Time from reporting catch [s]'])
+%             xlabel(['Time from start/end catch [s]'])
+%             xlabel(['Time from visible/invisible catch onset [s]'])
+            %             xlabel('Time from perceptual report')
+            set(gca, 'fontsize', 25)
+            
+            
+         
+            %                 ylim( [ylimsare])
+            axis tight
+            
+            
+            
+            
+            set(gcf, 'color', 'w')
+            
+            %store output for legend/stats
+            ttestdata(lgc,:,:) = ppantMeanSNR;
+            legendprint(lgc)=sh.mainLine;
+            %legend based on type
+            legendis = [legendis {chtype}];
+            
+            plcount=plcount+1;
+            
+             
+            lgc=lgc+1;
+            
+        end % by type
+        %legend based on Hz
+%             legendis = [legendis {chtype}];
+        
+        
+        axis tight
+       
+           xlim([timeidDYN(1) timeidDYN(end)])
+    end
+    % 
+    if rmvbase==1
+        ylim([-.6 .5])
+    end
+    %
+%     legend(legendprint, legendis)
+    %%
+    % %%%%%%%% END OF PLOTTING, SIG TESTS BELOW
+    if checksigON==1
+        %check for sig
+        pvals=zeros(1,size(ttestdata,3));
+        tvals=zeros(1,size(ttestdata,3));
+        for itime = 1:size(ttestdata,3)
+            
+            try [h,pvals(itime),~,stat]=ttest(ttestdata(1,:,itime), ttestdata(2,:,itime));
+                shuffType=1;
+            catch
+                [h,pvals(itime),~,stat]=ttest(ttestdata(plcount-1,:,itime)); %compares to zero.
+                shuffType=2; %whether or not to skip the non-parametric test for sig.
+            end
+            
+            tvals(itime)= stat.tstat;
+        end
+        sigs=find(pvals<.05);
+        %
+        %             %perform cluster based correction.
+        if length(sigs)>2 &&checkcluster==1
+            % find biggest cluster:
+            %finds adjacent time points
+            vect1 = diff(sigs);
+            v1 = (vect1(:)==1);
+            d = diff(v1);
+            clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
+            %grab largest
+            %                 ignore bad points.
+            
+            
+            % find biggest cluster:
+            %finds adjacent time points
+            sigs = find(pvals<.05);
+            
+            vect1 = diff(sigs);
+            v1 = (vect1(:)==1);
+            d = diff(v1);
+            clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
+            [~,maxClust] = max(clusterSTandEND(:,2)-clusterSTandEND(:,1));
+            
+            %
+            for icl=1:size(clusterSTandEND,1)
+                
+                %start and end are now:
+                % change icl to maxClust if we only want the largest
+                % cluster.
+                STC=sigs(clusterSTandEND(icl,1));
+                ENDC=sigs(clusterSTandEND(icl,2)+1);
+                checktimes =STC:ENDC;
+                observedCV = sum(abs(tvals(checktimes)));
+                % now shuffle condition labels to see if this cluster is
+                % sig (compared to chance).
+                
+                
+                
+                %all trials
+                alltr=reshape(ttestdata, [length(allppants)*2, length(Nt)]);                
+                alltrialsvec = 1:size(alltr,1);
+                
+                nshuff=2000;
+                
+                sumTestStatsShuff = zeros(1,nshuff);
+                for irand = 1:nshuff
                     
-                    p05=plot([H.Data(cv05uncorr) H.Data(cv05uncorr)], ylim, ['k:']);
-                    plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k:']);
-                    plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k:']);
-                    legend([pCV p05], {['observed'] ['p01'] })
-                    
-                    %%
-                    if observedCV>H.Data(cv05uncorr)
-                        title(['sum tvals = ' num2str(observedCV)]);
-                        %              title('Spatial Cluster  Significant!')
-                        timeidDYN=tgrm-3;
-                        for itime=checktimes
-                            figure(1);
-                            hold on
-                            plot(timeidDYN(itime), sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', sh.mainLine.Color)
-                            %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'm')
+                    if shuffType==1 %null is that no condition differences.
+                        
+                        
+                        shD=zeros(size(ttestdata));
+                        %since this is a within subjects design, we permute
+                        %the subjet specific averages within each subject
+                        %(as per Maris & Oostenveld (2007).
+                        
+                        % for each subject, randomly permute the averages.
+                        %(Dsub1cond1,Datasub1cond2)
+                        for ippant = 1:size(ttestdata,2)
+                            
+                            if mod(randi(100),2)==0 %if random even number
+                                shD(1,ippant,:) = ttestdata(1,ippant,:); % all time points.
+                                shD(2,ippant,:) = ttestdata(2,ippant,:); % all time points.
+                            else
+                                shD(1,ippant,:) = ttestdata(2,ippant,:); % all time points.
+                                shD(2,ippant,:) = ttestdata(1,ippant,:); % all time points.
+                            end
+                            
+%                             shD(ipartition,ippant,:) = pdata;
+                        end
+                        
+                    else %null is that there are no temporal coincident sig values.
+                        for ipartition = 1:2
+                            for ippant = 1:size(ttestdata,2)
+                                for itime=1:length(checktimes)
+                                    
+                                    %take random timepoint.
+                                    pdata = ttestdata(1,ippant, randi(size(ttestdata,3)));
+                                    
+                                    
+                                    shD(ipartition,itime,ippant) = pdata;
+                                end
+                            end
                         end
                     end
                     
-                    %
+%                     tvalspertimepoint = zeros(1,length(checktimes));
+%%                    
+% figure(3); clf; plot(squeeze(mean(shD(1,:,:),2))); hold on
+%                     plot(squeeze(mean(shD(2,:,:),2))); ylim([2.4 3])
+  %%                  
+                    testdata = squeeze(shD(1,:,:)) - squeeze(shD(2,:,:));
+                    p=[];
+                    for itest = 1:length(checktimes)
+                        
+                        [~, p(itest), ~,stat]= ttest(testdata(:,checktimes(itest)));
+                        
+                        tvalspertimepoint(1,itest) = stat.tstat;
+                    end
+                    
+                    % the null hypothesis is that these prob distributions
+                    % are exchangeable, so retain this permutation cluster-
+                    % level stat.
+                    sumTestStatsShuff(1,irand) = sum((tvalspertimepoint));
+                 
+                        
+                end %repeat nshuff times
+                
+                
+                %is the observed greater than CV?
+                % plot histogram:
+                %%
+                figure(2);
+                
+                clf
+                
+                
+                H=histogram(abs(sort(sumTestStatsShuff)));
+                % fit CDF
+                cdf= cumsum(H.Data)/ sum(H.Data);
+                %the X values (actual CV) corresponding to .01
+                [~,cv05uncorr] = (min(abs(cdf-.95)));
+%                 [~,cv01uncorr] = (min(abs(cdf-.99)));
+%                 [~,cv001uncorr] = (min(abs(cdf-.999)));
+                hold on
+                pCV=plot([observedCV observedCV], ylim, ['r-']);
+                
+                p05=plot([H.Data(cv05uncorr) H.Data(cv05uncorr)], ylim, ['k:']);
+%                 plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k:']);
+%                 plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k:']);
+                legend([pCV p05], {['observed'] ['95%'] })
+                
+                %%
+                if observedCV>H.Data(cv05uncorr)
+                    title(['sum tvals = ' num2str(observedCV)]);
+                    %              title('Spatial Cluster  Significant!')
+%                     timeidDYN=tgrm-3;
+     figure(1);
+     if icl==1 % otherwise we get stepped sigheight.
+yl=get(gca, 'ylim');
+     end
+                    for itime=checktimes
+                   
+                        hold on
+                        
+                        
+                        plot(timeidDYN(itime), yl(1)-.1*(diff(yl)), ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
+                        %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'm')
+                    end
                 end
+                
+                %
             end
-            
         end
-        %%
+        
     end
-  
+    %% adjust ylims.
+    yl=get(gca, 'ylim');
+        %extend by 10% (keeps sig points in relative space).
+        dyl=diff(yl)*.1;
+        ylim([yl(1)-dyl yl(2)])
+        
     %%
-    print('-dpng', ['PFI trace Bground SSVEP summary, during ' num2str(chtype) '.png'])
+    cd(basefol)
+    cd('Figures')
+    cd('GFX catch SNR timecourse')
+    %%
+%     print('-dpng', ['Catchtrace Bground SSVEP summary, for ' hzp 'reporting catch onset.png'])
+% print('-dpng', ['Catchtrace Bground SSVEP summary, for msubtracted reporting catch offset.png'])
+print('-dpng', ['Catchtrace Bground SSVEP summary, for BPcatchonset - BPcatchoffset.png'])
     
     %%
     

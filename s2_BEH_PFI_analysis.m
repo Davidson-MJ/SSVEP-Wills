@@ -14,10 +14,11 @@ dbstop if error
 %%
 %load data structure
 
-allppants=1:20;
+% allppants=1:20;
 
-    
-        allppants=[1,2,4,6,9:16,18]; %
+ 
+%        allppants=[1,2,4,6,9:16,18]; %
+allppants=[1,2,4,6,7,9:19]; %
 
 % save('MD_AllBP_perppant.mat', 'goodppants', '-append');
 load('MD_AllBP_perppant.mat');
@@ -27,20 +28,20 @@ load('Catchperformance.mat')
 
 fontsize=25;
 
-job.removeCatchperiodsfromBPtrace=1;
+job.removeCatchperiodsfromBPtrace=0;
 
 %Three types of analysis (IVs( RMfactors)). Number absent, location absent, and flicker
 %speed.
-job.calcPFIdataperNum=1; %resaves into PFI_only with new fields in structure..
-job.calcPFIdataperFreqandLoc=1; %resaves into PFI_only with new fields in structure..
+job.calcPFIdataperNum=0; %resaves into PFI_only with new fields in structure..
+job.calcPFIdataperFreqandLoc=0; %resaves into PFI_only with new fields in structure..
 
 
 
-job.concatPFIacrossPpants_num=1;
-job.concatPFIacrossPpants_byLoc=1;
-job.createShufflePFIdata_pernum=1;
-job.calcPFIdataperNum_shuffled=1;
-job.concatPFIacrossPpants_num_shuffled=1;
+job.concatPFIacrossPpants_num=0;
+job.concatPFIacrossPpants_byLoc=0;
+job.createShufflePFIdata_pernum=0;
+job.calcPFIdataperNum_shuffled=0;
+job.concatPFIacrossPpants_num_shuffled=0;
 %
 
 job.concatPFIacrossPpants_slope_nulldistribution=0;
@@ -59,9 +60,11 @@ job.LMEnPFIwShuff=0;
 
 %plot the results for PFI, in separate bar graphs.
 job.plotBehaviouraldata=0;
+
+% plot these together:
 job.plotBehaviouraldata_num_with_shuffled=1;
 
-
+job.compareSlopesofShuffledvsObserveddata=0;
 
 
 
@@ -1396,7 +1399,7 @@ if job.plotBehaviouraldata_num_with_shuffled==1
                 p1= Freq_NumPFI_acrossTrials;
                 p2= mDurperNumPFI_acrossTrials;
                 p3= totalDurperNumPFI_acrossTrials;
-                xlabelis = '# of invisible targets';
+                xlabelis = 'nPFI';
                 if plotallNUM==1
                 xticks = [{'0'}, {'1'} {'2'}, {'3'}, {'4'}];
                 else
@@ -1422,7 +1425,7 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             %take mean within, then across ppants.
             %within
             
-            subplot(1,3,iDV)
+            subplot(2,3,iDV)
             switch iDV
                 case 1
                     datatoplot=p1;
@@ -1493,7 +1496,8 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             %
             %%
             bh=bar(mData);
-            bh(1).FaceColor= [.5 .5 .9];
+            bh(1).FaceColor= ['b'];
+            bh(2).FaceColor= [.5 .5 .5];
             %%
             hold on
             
@@ -1501,24 +1505,25 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             
             
             %%
-            legend 'Real' 'Shuffled'
-            
+            if iDV==3
+            legend 'Observed' 'Shuffled'
+            end
             
             axis('tight')
              switch iDV
                 case 1
                     ylabel([yis]);
-                    ylimsa=[0 15];
+                    ylimsa=[0 10];
                     set(gca, 'ytick', [0:2:ylimsa(2)])
                 case 2
                     ylabel({[yis ]});
-                    ylimsa=[0 12];
+                    ylimsa=[0 10];
                     set(gca, 'ytick', [0:1:ylimsa(2)])
 
                 case 3
                     ylabel({[yis ]});
                     if plotallNUM==1
-                    ylimsa=[0 45];
+                    ylimsa=[0 40];
                     else
                         ylimsa=[0 25];
                     end
@@ -1535,7 +1540,7 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             
                 
             xlabel(xlabelis)
-            
+              xlim([.5 5.5])
             end
     end
         shg
@@ -1551,6 +1556,218 @@ if job.plotBehaviouraldata_num_with_shuffled==1
     end
     
     
+if job.compareSlopesofShuffledvsObserveddata==1
+    
+   %start with slope across  3?
+     cd(basedir)
+    load('PFI_data_concat')
+    load('ShuffledData')
+
+%     clf
+   testnPFIinclZERO=0;
+   
+                p1= Freq_NumPFI_acrossTrials;
+                p2= mDurperNumPFI_acrossTrials;
+                p3= totalDurperNumPFI_acrossTrials;
+                xlabelis = '# of invisible targets';
+                xticks = [{'1'} {'2'}, {'3 or 4'}];
+                
+                % allocate shuffled data.
+                s1=Freq_NumPFI_acrossTrials_shuffled;
+                s2= mDurperNumPFI_acrossTrials_shuffled;
+                s3= totalDurperNumPFI_acrossTrials_shuffled;
+                %%
+         
+        pvalswere=[];
+        figure(1);
+        for iDV=1:3
+            %take mean within, then across ppants.
+            %within
+            
+            subplot(2,3,iDV)
+            switch iDV
+                case 1
+                    datatoplot=p1;
+                    shuffledtoplot=s1;
+                    yis='PFI per trial';
+                case 2
+                    
+                    datatoplot=p2;
+                    shuffledtoplot=s2;
+                    yis='PFI duration [s]';
+
+                case 3
+                                        datatoplot=p3;
+                    shuffledtoplot=s3;
+                    yis= 'Total duration [s]';
+                    if testnPFIinclZERO==1 
+                    xticks = [{'0'},{'1'} {'2'}, {'3'}, {'4'}];
+                    end
+            end
+            if testnPFIinclZERO==1
+                 xticks = [{'0'},{'1'} {'2'}, {'3'}, {'4'}];
+                 usedata=1:5;
+                 xrange=usedata;
+            else
+                usedata=2:5;
+                xrange=1:4;
+            end
+            %%
+            %only look at good ppants.
+            pl=[];
+            for iregres=1:2
+                if iregres==1
+             datanowreal=squeeze(nanmean(shuffledtoplot(:,:,usedata),2));
+                    Bcolor=[.5 .5 .5];
+                    dcolor= [.5 .5 .5];
+                else
+                   
+            datanowreal=squeeze(nanmean(datatoplot(allppants,:,usedata),2));
+            Bcolor='b';
+            dcolor='b';
+                end
+                    
+            
+            %% observed slope = 
+            scAx = 1:size(datanowreal,2);
+            if iregres==1
+                scAx=scAx+.15;
+            end
+            scAx = repmat(scAx, [size(datanowreal,1),1]);
+            
+            %reshape into vector for plot
+            scAxm = reshape(scAx, 1, size(scAx,1)*size(scAx,2));
+            datanowSc = reshape(datanowreal, 1, size(scAxm,1)*size(scAxm,2));
+        
+     
+        
+%         take linear regression and plot coeff. and slope
+        [p, S] = polyfit(scAxm, datanowSc, 1); %linear fit
+%         p1 is the slope, p2 the intercept
+        
+        if iregres==2 % store the observed slope
+        ObservedSlope=p(1);
+        end
+        
+        f1=polyval(p,scAxm);
+        hold on; 
+        
+        %%%%%%%%% plotting
+               
+%         sc=    scatter(scAxm,datanowSc);
+%         sc.MarkerFaceColor=dcolor;
+%         sc.MarkerEdgeColor=dcolor;
+%         
+%         xlabel(xlabelis);
+%         xlim([xrange(1)-.5, xrange(end)+.5])
+%         
+%         ylabel(yis);
+%         pl(iregres)=plot(scAxm, f1, 'color',Bcolor, 'linew', 6);
+%         
+%         if iregres==2 && iDV==3
+% %         legend(pl, ['\beta' ' = ' sprintf('%.2f',p(1))])
+%         legend([pl(2), pl(1)], {'Observed data', 'Shuffled data'})
+%         
+%         end
+%         
+%         % now calculate all slopes from shuffled data:
+%         set(gca, 'fontsize', 15)
+%         set(gca, 'xtick', xrange, 'xticklabels', xticks)
+            end
+        %%
+        subplot(2,3,iDV+3)
+        allslopes = zeros(1,size(shuffledtoplot,2));
+        for ishuff=1:size(shuffledtoplot,2)
+        
+            datanow=squeeze(shuffledtoplot(:,ishuff,usedata));
+            
+            %% observed slope = 
+            scAx = 1:size(datanow,2);
+            scAx = repmat(scAx, [size(datanow,1),1]);
+            
+            %reshape into vector for plot
+            scAxm = reshape(scAx, 1, size(scAx,1)*size(scAx,2));
+            datanowSc = reshape(datanow, 1, size(scAxm,1)*size(scAxm,2));
+        
+        %we do need to remove Nans to use polyfit however:
+        nanid=find(isnan(datanowSc));
+        scAxm(nanid)=[];
+        datanowSc(nanid)=[];
+            
+        %take linear regression and plot coeff. and slope
+        [p, S] = polyfit(scAxm, datanowSc, 1); %linear fit
+        %p1 is the slope, p2 the intercept
+        
+%         f1=polyval(p,scAxm);
+%         hold on; plot(scAxm, f1)
+        allslopes(ishuff)=p(1);
+        end
+        %plot all.
+        shg
+        %%
+        hb=histogram(sort(allslopes),25);        
+        hb.FaceColor=[.5 .5 .5];
+         
+        % fit CDF
+        %note that if we have positive and negative numbers, this will
+        %error.
+        if any(hb.Data>0) && any(hb.Data<0)
+            % shift all values so CDF is correct
+            hb4cdf= hb.Data+1000;
+            
+        else 
+            hb4cdf=hb.Data;
+        end
+        cdf= cumsum(hb4cdf)/ sum(hb4cdf);
+        %the X values (actual CV) corresponding to .05
+        
+        [~,cv05uncorr] = (min(abs(cdf-.95)));
+        
+        
+          [~, c2] = min(abs(hb.Data-ObservedSlope)); %closest value. 
+                        pvalis= 1-cdf(c2);
+        
+        % height of plot?
+        yt=get(gca, 'ylim');
+        %plot
+        hold on; 
+        p05=plot([hb.Data(cv05uncorr) hb.Data(cv05uncorr)], [0, yt(2)*.7], ['k:'], 'linew', 3);
+                
+        text(hb.Data(cv05uncorr), yt(2)*.75, '95%', 'fontsize', 15, 'color', 'k');
+                
+        po=plot([ObservedSlope,ObservedSlope], [0, yt(2)*.7], ['-b'], 'linew', 3);
+        
+
+
+        if iDV==3
+%         legend([po, p05], [{'Observed \bf\beta'},{ '95% CV'}])
+        legend([po], [{'Observed'}])
+        end
+%adjust xlim.
+mX=min(hb.Data); maxX= ObservedSlope;
+ xlim([ mX ObservedSlope + (ObservedSlope - mX)*.2])
+
+% xlabel(['\beta values from shuffled data']);
+xlabel(['slope of the linear fit']);
+           ylabel('count')
+        
+           set(gca, 'fontsize', 23)
+           pvalswere(iDV) = pvalis;
+           
+        end
+        %%
+        set(gcf, 'color', 'w')
+        
+        disp(['p values are ' num2str(pvalswere )])
+    %%
+    cd([basedir]) 
+    %%
+    cd ../
+    cd(['Figures' filesep 'Behavioural Bar Plots'])
+    %%
+    
+ print('-dpng', 'linearregression and shuffle')
+end
 
 
 %% Now the stats for the PFI data
