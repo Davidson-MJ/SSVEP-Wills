@@ -14,7 +14,7 @@ job.crunchacrossppants=0; %saves also within participant folders.
 job.plotacrossppants=0;
 
 
-job.crunchacrossppants_compareWindow=1
+job.crunchacrossppants_compareWindow=1;
 
 if job.crunchacrossppants==1
 params.Fs=250;
@@ -208,6 +208,7 @@ params.fpass=[0 55];
 
 hztest = [5,15,20, 30, 40];
 acrossPPSNR=zeros(length(allppants), length(lt), length(hztest));
+acrossPPSNR_spectrum= [];
 acrossPPsignalpower= acrossPPSNR;
 acrossPPnoisepower = acrossPPSNR;
 counter=1;
@@ -224,8 +225,12 @@ for ippant = 1:length(allppants)
     chdata = squeeze(EEG_preprocd(ichan,:,:));
     
     %for each step size, use the specgram function.
+    counter=1;
+   figure(1); clf
+   
         for ilt = 1:length(lt)
        %%
+       
             movingwin= [lt(ilt), lt(ilt)];
         
         [spg,tgrm,fgrm,]= mtspecgramc(chdata, movingwin, params);
@@ -297,10 +302,15 @@ for ippant = 1:length(allppants)
     noiseatfreq = squeeze(mean(mspg([nbelowvec,nabovevec], :) ,2));
     acrossPPnoisepower(ippant,ilt,itmp)= squeeze(mean(noiseatfreq));
     end
-    if ippant %== 2%length(allppants)
+    
+    acrossPPSNR_spectrum(ilt).data(ippant,:) = squeeze(mean(stmp,2));
+    
+    
+%     if ippant == length(allppants) % plot across all snr.
     figure(1);
     subplot(5,2, counter)
-    plot(fgrm, squeeze(mean(stmp,2)), 'k');
+    tmp=acrossPPSNR_spectrum(ilt).data;
+    plot(fgrm, squeeze(mean(tmp,1)), 'k');
     title([num2str(lt(ilt)) 's, hbw = ' sprintf('%.2f',hbw) ' Hz']);
 ylim([-2 5]);     hold on;
     % center kernel at 20 Hz
@@ -312,22 +322,30 @@ ylim([-2 5]);     hold on;
     xlabel('Frequency (Hz)')
     ylabel('log(SNR)')
     set(gca, 'fontsize', 15)
+%     end
     end
-    end
-end
+
+%%
+set(gcf, 'color', 'w')
+cd(basefol)
+cd ../
+cd(['Figures'  filesep 'SNR by different temporal windows'])
+%%
+print('-dpng', [' SNR spectrum by window length, ppant ' num2str(ippant)]);
+
 %%
 figure(2); clf
 for  iplotype=1:3 % signal, noise, snr.
 subplot(3,1,iplotype)
 switch iplotype
     case 1
-        plotd= log(acrossPPsignalpower);
+        plotd= log(acrossPPsignalpower(1,:,:));
         yis= 'log signal power';
     case 2
-        plotd= log(acrossPPnoisepower);
+        plotd= log(acrossPPnoisepower(1,:,:));
         yis= 'log noise power';
     case 3
-        plotd= acrossPPSNR;
+        plotd= acrossPPSNR(1,:,:);
         yis='log(SNR)';
 end
 
@@ -349,16 +367,19 @@ end
 %%
 
 if iplotype==3
-    hold on;
-    plot(xlim, [0 0 ], ['k:'])
-    
-    % also plot at 2 and 4, 
-    plot([2 2], [-1 mean(macrossPPSNR(2,1))], ['b-'])
-    plot([4 4], [-1 mean(macrossPPSNR(3,1))], ['b-'])
+%     hold on;
+%     plot(xlim, [0 0 ], ['k:'])
+%     
+%     % also plot at 2 and 4, 
+%     plot([2 2], [-1 mean(macrossPPSNR(2,1))], ['b-'])
+%     plot([4 4], [-1 mean(macrossPPSNR(3,1))], ['b-'])
 end
 end
 %%
-cd(basefol)
-save('GFX_rawSNR_static_wholetrial', 'acrossPPSNR', 'f')
 
+suptitle(['Participant ' num2str(ippant)])
+print('-dpng', [' window length summary, ppant ' num2str(ippant)]);
+
+% save('GFX_rawSNR_static_wholetrial', 'acrossPPSNR', 'f')
+end
 end      

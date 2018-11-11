@@ -32,18 +32,21 @@ job.plot_dynSSEP_acrossppants=0;
 job.erpimagePpantlevel=0; %using dynRESS SSVEP or SNR
 job.concaterpdataacrossppants=0; % concat above
 job.erpimageacrossppants=0;
+job.gradedchangesinERPimage_PFI=0;
+
 
 % also tr x tr of catch responses.
 % for catch
 job.erpimage_catchPpantlevel=0; %stores responses as 100 ydimension trial x trial
 job.concaterpdataforcatchacrossppants=0;
 job.erpimage_forcatchacrossppants=0;
+job.gradedchangesinERPimage_Catch=0;
 
 
 
 
-job.BPandSSVEPtimecourseacrossppants_group=0; %same format as previous script (epoch PFI etc.)
-job.BPandSSVEPtimecourseacrossppants_group_CATCH=1; %same format as previous script (epoch PFI etc.)
+job.BPandSSVEPtimecourseacrossppants_group=1; %same format as previous script (epoch PFI etc.)
+job.BPandSSVEPtimecourseacrossppants_group_CATCH=0; %same format as previous script (epoch PFI etc.)
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
 % PARAMETERS FOR ALL SPECTROGRAM! KEEP CONSISTENT
@@ -1567,8 +1570,8 @@ if job.concaterpdataacrossppants==1
                             % now resample this large set, but smooth from
                             % middle.
                             
-                           pdataNre= resample(pdataN,140,size(pdataN,1));
-                            pdataNre = pdataNre(20:120,:);
+                           pdataNre= resample(pdataN,160,size(pdataN,1));
+                            
 % subplot(313); imagesc(pdataNre)
 %
                             %now safe to smooth
@@ -1578,12 +1581,21 @@ if job.concaterpdataacrossppants==1
                                 pdataOUT(:,itime)= smooth(pdataNre(:,itime),8);
                             end
  
+                            % Now extract central component, to remove edge
+                            % artegacts
+                            pdataOUT = pdataOUT;
                             
 %                              
-%% %                             %% san check:
+% %                             %% san check:
                              figure(1); clf
-                            subplot(211);imagesc(pData);
-                            subplot(212); imagesc(pdataOUT)
+                            subplot(221);imagesc(pData); title('original'); subplot(2,2,2); imagesc(pdataN); title('extended')                            
+                            subplot(223); imagesc(pdataNre); title('resample ext.'); subplot(224); imagesc(pdataOUT); title('output all'); hold on;
+                            plot([xlim], [20 20], ['k:'])
+                            plot([xlim], [140 140], ['k:'])
+%                             % keep this data, note these extensions mark
+%                             % the flip end points.
+
+                            pdataOUT = pdataOUT(20:140,:);
                             %%
 %                             %%
                             switch ionoff
@@ -1686,7 +1698,7 @@ if job.erpimageacrossppants==1
                 ylimsare = [1.1 1.6];
             case 2
                 ylimsare = [2.5 2.9];
-                case 7
+            case 7
                 ylimsare = [0 .3];
                 
         end
@@ -1890,6 +1902,424 @@ if job.erpimageacrossppants==1
     cd([basefol filesep 'Figures' filesep 'GFX PFI trial by trial'])
      print('-dpng', ['PFI SNR summary all.png'])
 end
+
+
+
+if job.gradedchangesinERPimage_PFI==1
+  %% now plot across ppants.
+    % as above, with some tweaks.
+    
+    %%
+    
+    clf
+    %can plot BARS next to trial-by-trial image, or snr-timecourse.
+for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
+
+    
+    getelocs
+    rmvbase=0;
+    
+    counter2=1; % for plotting threeway PFI
+    
+    
+    
+    counter=1;
+    hzcounter=1;
+    for hzis=[1, 2, 7]
+        cd(basefol)
+        cd('EEG')
+        cd('GFX_EEG-RESS')
+        usehz= peakfreqsare(hzis);
+        switch hzis
+            case 1
+                
+                ylimsare=[1.1, 1.8];
+                col='b';
+            case 2
+%                 ylimsare=[2.5, 3.2];
+                ylimsare=[2.7, 3.1];
+                col=[.2 .2 .2];
+                
+                case 7
+%                 ylimsare=[2.5, 3.2];
+                ylimsare=[.3, .6];
+                col='m';
+        end
+        load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
+%         tgrm = timeidDYN;
+        %%
+        for itimezero=2%:2
+            
+            
+            switch itimezero
+                case 1
+                    useBP=storeacrossPpant_onsetBP;
+                    useSNR=storeacrossPpant_onsetSNR;
+%                     useRTs=storeacrossPpant_onsetRTs;
+%                     useTOPO=storeacrossPpant_onsetTOPO;
+                    
+                    ctype= 'target invisible';
+                    chtype='button press';
+                    
+                case 2
+                    
+                    useBP=storeacrossPpant_offsetBP;
+                    useSNR=storeacrossPpant_offsetSNR;
+%                     useRTs=storeacrossPpant_offsetRTs;
+%                     useTOPO=storeacrossPpant_offsetTOPO;
+                    
+                    ctype= 'target visible';
+                    chtype='button release';
+                    
+                    
+            end
+            
+            
+            
+            %                 for ip= 1:length(allppants)
+            %                     trialind = [1:24] + 24*(ip-1);
+            %                     acrBP(trialind,:,:) = useBP(ip,:,:);
+            %                     acrSNR(trialind,:,:)=    useSNR(ip,:,:);
+            %                     acrRTs(trialind)=    useRTs(ip,:);
+            %
+            %                 end
+            
+            %take mean across ppants for erp images..
+            acrBP= squeeze(nanmean(useBP,1));
+%             acrBP= squeeze(nanmean(useBP(21,:,:),1));
+            
+            acrSNR=squeeze(mean(useSNR,1));
+%             acrSNR=squeeze(nanmean(useSNR(21,:,:),1));
+            
+            
+            
+            
+            %sort across all
+            %sort trial index by longest RT first.
+            %%
+            figure(1)
+            hold on
+            %%
+            subplot(4,4,2:3)
+            
+            %         [sortedRTs, cid] = sort(acrRTs, 'descend');
+            
+            %
+            imagesc([-3:1/60:3], 1:size(acrBP,1), acrBP);%(cid,:));
+            %
+            title({['PFI ' num2str(ctype)]}, 'fontsize', 15)
+            c=colorbar;
+            ylabel(c, 'buttons pressed')
+            %                 ylabel('resampled catch trials')
+            xlim([-1.75 1.75])
+            set(gca, 'fontsize', 15, 'ytick', [])
+            hold on
+            plot([0 0] , ylim, ['w:'], 'linewidth', 3)
+            plot([0 0] , ylim, ['k:'], 'linewidth', 2)
+            %                 subplot(4,2,7)
+            
+            ppantMeanBP= squeeze(mean(useBP,2));
+            %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            x = ppantMeanBP;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+            %compute new stErr %which version?
+            %             stE = std(NEWdata)/sqrt(size(x,1));
+            %                 shadedErrorBar([-3:1/60:3], mean(ppantMeanBP,1),stE)
+            %                 set(gca, 'fontsize', 15)
+            %                 hold on;
+                            ylabel({['Normalized'];['trial count']})
+            %                 plot([0 0] , ylim, ['k:'], 'linewidth', 1)
+%             axis square
+            %%
+            xlabel(['Time from ' ctype])
+            
+            %SNR
+                placeis = hzcounter + 3;
+
+            subplot(4,3, placeis);
+            
+            %reorder SNR
+            acrSNRsort=acrSNR;
+            
+            %%
+            %                 %smooth across trials
+            sm_snrgrm20=zeros(size(acrSNRsort));
+            for itime=1:size(acrSNRsort,2)
+                sm_snrgrm20(:,itime)= smooth(acrSNRsort(:,itime),15);
+            end
+            
+            
+            %     imagesc(acrSNR);
+            imagesc(timeidDYN, 1:size(acrSNRsort,1), acrSNRsort);
+            c=colorbar;
+
+%             ylabel(c, {['RESS log(SNR)']})
+
+if hzis~=7    
+            title([num2str(usehz) ' Hz (' num2str(hzis) 'f)'])
+else
+            title([num2str(usehz) ' Hz (f2-f1)'])
+end
+%             title(['BG ' num2str(hzis) 'F'])
+            
+            hold on
+            plot([0 0] , ylim, ['k:'], 'linewidth', 3)
+            plot([0 0] , ylim, ['w:'], 'linewidth', 2)
+            
+            
+            xlim([-1.75 1.75])
+            set(gca, 'fontsize', 15, 'ytick', [])
+            %                 subplot(4,2,8)
+            %
+            %plot across ppant trace
+            ppantMeanSNR= squeeze(mean(useSNR,2));
+            
+            %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            x = ppantMeanSNR;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+        
+            xlabel(['Time from ' ctype])
+            ylabel({'Normalized'; 'trial count'})
+                caxis([ylimsare])
+%                 axis square
+                
+            set(gca, 'fontsize', 15)
+            cd(basefol)
+            set(gcf, 'color', 'w')
+            shg
+            if hzis==7;
+                ylabel(c, 'RESS log(SNR)')
+            end
+            
+            % beside this, plot the bar!
+            %grouped nPFI
+            %%
+            groupednPFISNR=nan(length(allppants), 3);  % for barchart
+            groupednPFISNR_ts=nan(length(allppants), 3, size(acrSNR,2));  % for SNR time-seriestrace
+            if itimezero==1 % interested in after BP                
+            BPidx=181:361;
+            else
+                BPidx=1:180;
+            end
+                groupedBEHflpd = fliplr(squeeze(nanmean(acrBP(:,BPidx),2))'); %takes mean over all SNR timepoints.
+            %%
+            groupednPFISNR_thirds=nan(length(allppants),3);
+            
+            for ippant = 1:size(useBP,1); 
+%                % per ppant, collect trial indices:
+                ppant_BEH= squeeze(mean(useBP(ippant,:,BPidx),3)); %takes mean over all BP time points.
+                ppant_SNR=squeeze(mean(useSNR(ippant,:,:),3)); %takes mean over all SNR timepoints.
+                ppant_SNR_ts=squeeze(useSNR(ippant,:,:)); %takes mean over all SNR timepoints.
+               maxnPFI=ceil(max(ppant_BEH));
+%                
+               %flip BEH /SNR to correct orientation
+               ppantBEHflpd=fliplr(ppant_BEH);
+               ppantSNRflpd=fliplr(ppant_SNR);
+               ppant_SNR_ts=flipud(ppant_SNR_ts);
+               % only collect bin width.
+%              
+%                 nPFIidx = dsearchn(ppantBEHflpd', [0:3]');
+               nPFIidx = dsearchn(groupedBEHflpd', [0:4]');
+               
+               nPFIidx=unique(nPFIidx);
+               
+               if nPFIidx(1) ~=1
+                   nPFIidx(1)=1;
+               end
+               
+               %take mean for these trials (actually rows in trialxtrial)
+               for iPFI=1:length(nPFIidx)-1;
+                   
+                   try indices = nPFIidx(iPFI):nPFIidx(iPFI+1)-1;
+                   catch %if max
+                       indices = nPFIidx(iPFI):100;
+                   end
+                   
+                   if iPFI==4;
+                       shg
+                   end
+                   groupednPFISNR(ippant, iPFI)= squeeze(nanmean(ppantSNRflpd(indices)));
+                   
+                   
+                   groupednPFISNR_ts(ippant, iPFI,:)= squeeze(nanmean(ppant_SNR_ts(indices,:)));
+% %                    %
+%                    figure(3)
+%                    clf
+%                    plot(ppantSNRflpd);
+%                    hold on
+%                    plot([indices(1) indices(1)], ylim, ['k:'])
+%                    plot([indices(end) indices(end)], ylim, ['k:'])
+%                    title([num2str(squeeze(nanmean(ppantSNRflpd(indices))))])
+               end
+               
+% works well.  
+
+groupednPFISNR_quarters(ippant,1)= squeeze(nanmean(ppant_SNR(1:24)));
+groupednPFISNR_quarters(ippant,2)= squeeze(nanmean(ppant_SNR(25:50)));
+groupednPFISNR_quarters(ippant,3)= squeeze(nanmean(ppant_SNR(51:75)));
+groupednPFISNR_quarters(ippant,4)= squeeze(nanmean(ppant_SNR(76:100)));
+
+%                
+            end
+            %% using raw thirds?
+%             groupednPFISNR_thirds=fliplr(groupednPFISNR_thirds);
+%                         groupednPFISNR=fliplr(groupednPFISNR_thirds);
+%             groupednPFISNR
+            
+            %%
+            figure(1); 
+            if plotBarsorTimeseries==1
+   %place Bar charts beneath SNR
+            
+                placeis = hzcounter + 6;
+            
+         mbar=(nanmean(groupednPFISNR,1));
+         
+         
+         %adjust errorbars:
+          %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            x = groupednPFISNR;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant)
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+        stB=nanstd(NEWdata,1)./sqrt(length(allppants));
+        
+%             stB=nanstd(groupednPFISNR,1)./sqrt(length(allppants));
+        
+subplot(4,3, placeis)
+
+        b1=bar(mbar);        
+         b1.FaceColor=col;
+         hold on         
+         errorbar(mbar, stB, 'color', 'k','LineStyle', 'none')
+         
+set(gca, 'fontsize', 15, 'xticklabels', {'0\leq1', '1\leq2', '2\leq3', '\geq3'})
+xlabel('amount of PFI');
+         ylabel('RESS log(SNR)')
+         
+         colormap('viridis')
+ylim(ylimsare)            
+shg
+%             title([num2str(usehz) ' Hz (' num2str(hzis) 'f)'])
+% axis tight
+xlim([.5 4.5])
+            counter=counter+1;
+%%%%%%% ANOVA and LME stats if need be.             
+%             nppants=length(allppants);
+%             nconds = size(groupednPFISNR,2);
+%             %RMANOVA?
+%             dataan= reshape(groupednPFISNR, [nppants*nconds,1]);
+%             conds = [ones(nppants,1); ones(nppants,1)*2;ones(nppants,1)*3];
+%                 subs = repmat([1:length(allppants)]', [nconds,1]);
+%             
+%             [anret]=rmanova(dataan, conds, subs);
+% %%
+%             %LME to be sure:            
+%           tblA=table(dataan, conds, subs);
+%             
+%              UNterm1='dataan ~  conds + (1|subs)';
+% %              UNterm2='dataan ~  conds';
+%              UNterm2='dataan ~  1+ (1|subs)';
+%              %creating models:
+%              lmeUN =fitlme(tblA, UNterm1);
+%              lmeUN2 =fitlme(tblA, UNterm2);
+%              
+%     LMEout=compare(lmeUN2, lmeUN);
+            %%
+% %%
+            else % plot time series instead.
+%place Bar charts beneath SNR
+            
+                placeis = hzcounter+ 9;
+            
+            subplot(4,3,placeis);
+                tbase = timeidDYN;
+    lgsav=[];
+% can also plot time-series:
+for iPFI=1:4
+    x= squeeze(groupednPFISNR_ts(:,iPFI,:));
+    %adjust errorbars.
+    
+       
+            mXppant =squeeze( nanmean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = nanmean(nanmean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+            %             %compute new stErr %which version?
+            stE = nanstd(NEWdata)/sqrt(size(x,1));
+            %
+            hold on
+            sh=shadedErrorBar(tbase, nanmean(x,1),stE,['-'],[1]);
+                
+                sh.mainLine.Color = col;
+                sh.mainLine.LineWidth = iPFI*1.5;
+                sh.patch.FaceColor = col;
+                sh.edge(1).Color = col;
+                sh.edge(2).Color = col;
+                
+   lgsav(iPFI)= sh.mainLine; 
+end
+%%
+% legend([lgsav], [{'nPFI 0 \leq 1'}, {'nPFI 1 \leq 2'}, {'nPFI 2 \leq 3 or 4'}])
+%%
+set(gca,'fontsize', 15); set(gcf, 'color', 'w')
+xlabel(['time from ' chtype])
+ylabel('RESS log(SNR)')
+axis tight
+ylim([ylimsare(1) ylimsare(2)])
+
+            end
+%%
+counter2=counter2+1;
+    
+            %%
+           
+       
+        end 
+        hzcounter=hzcounter+1;
+    end
+end
+    %%
+    shg
+    %%
+    
+    colormap('viridis')
+    cd(basefol)
+    cd('Figures')
+    cd('GFX PFI trial by trial')
+    shg
+     print('-dpng', ['PFI graded SNR summary graded, ' ctype '.png'])
+    
+    
+end
+
 
 if job.erpimage_catchPpantlevel==1
     %%
@@ -2337,8 +2767,8 @@ if job.concaterpdataforcatchacrossppants==1
         
             loadname=['Catch_performance_withSNR_' num2str(usehz) '_RESS'];
         
-   storeacrossPpant_catchEVENTS_BPs = zeros(length(allppants), 5, 100, 361);
-   storeacrossPpant_catchEVENTS_SNR = zeros(length(allppants), 5, 100, length(Nt));
+   storeacrossPpant_catchEVENTS_BPs = zeros(length(allppants), 5, 132, 361);
+   storeacrossPpant_catchEVENTS_SNR = zeros(length(allppants), 5, 132, length(Nt));
         icounter=1;
         
         for ippant = allppants
@@ -2462,6 +2892,7 @@ if job.concaterpdataforcatchacrossppants==1
                             %discount the nans in data. (since these are
                             %sorted, should be at bottom).
                             %%
+                         %%
                             pData= pData(1:lc,:);
                             
                             %repmat edges to avoid edge artefacts!
@@ -2496,8 +2927,8 @@ if job.concaterpdataforcatchacrossppants==1
                             % now resample this large set, but smooth from
                             % middle.
                             
-                           pdataNre= resample(pdataN,140,size(pdataN,1));
-                            pdataNre = pdataNre(21:120,:);
+                           pdataNre= resample(pdataN,160,size(pdataN,1));
+                            
 % subplot(313); imagesc(pdataNre)
 %
                             %now safe to smooth
@@ -2509,6 +2940,18 @@ if job.concaterpdataforcatchacrossppants==1
  
                             
 %                              
+% %                             %% san check:
+%                              figure(1); clf
+%                             subplot(221);imagesc(pData); title('original'); subplot(2,2,2); imagesc(pdataN); title('extended')                            
+%                             subplot(223); imagesc(pdataNre); title('resample ext.'); subplot(224); imagesc(pdataOUT); title('output all'); hold on;
+%                             plot([xlim], [14 14], ['k:'])
+%                             plot([xlim], [145 145], ['k:'])
+%                             % keep this data, note these extensions mark
+%                             % the flip end points.
+% Now extract central component, to remove edge
+                            % artegacts
+                            
+                            pdataOUT = pdataOUT(14:145,:);
 %% %                             %% san check:
 %                              figure(1); clf
 %                             subplot(211);imagesc(pData);
@@ -2760,19 +3203,429 @@ end
      end
 end
 
+if job.gradedchangesinERPimage_Catch==1
+  %% now plot across ppants.
+    % as above, with some tweaks.
+    
+    %%
+    
+    clf
+    %can plot BARS next to trial-by-trial image, or snr-timecourse.
+for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
 
+    
+    getelocs
+    rmvbase=0;
+    
+    counter2=1; % for plotting threeway PFI
+    
+    
+    
+    counter=1;
+    hzcounter=1;
+    for hzis=[1, 2, 7]
+        cd(basefol)
+        cd('EEG')
+        cd('GFX_EEG-RESS')
+        usehz= peakfreqsare(hzis);
+        switch hzis
+            case 1
+                
+                ylimsare=[.5, 2];
+                col='b';
+            case 2
+%                 ylimsare=[2.5, 3.2];
+                ylimsare=[1.9, 3.4];
+                col=[.2 .2 .2];
+                
+                case 7
+%                 ylimsare=[2.5, 3.2];
+                ylimsare=[.1, .8];
+                col='m';
+        end
+        load(['GFX_Catch_performance_withSNR_' num2str(usehz) '_min0_RESS'])
+%         tgrm = timeidDYN;
+        %%
+              
+      
+%         tgrm = timeidDYN;
+        %%
+       
+      for itype = 4     % 1:5              
+        
+          DIMSare{1} = 'catch onset';
+          DIMSare{2} = 'catch offset';
+          DIMSare{3} = 'reporting catch onset';
+          DIMSare{4} = 'reporting catch offset';
+          DIMSare{5} = 'invisible catch onset';
+          
+          
+          
+          chtype=DIMSare{itype};
+        useBP= squeeze(storeacrossPpant_catchEVENTS_BPs(:,itype,:,:));
+        useSNR= squeeze(storeacrossPpant_catchEVENTS_SNR(:,itype,:,:));
+        
+            
+            
+            
+            
+            %                 for ip= 1:length(allppants)
+            %                     trialind = [1:24] + 24*(ip-1);
+            %                     acrBP(trialind,:,:) = useBP(ip,:,:);
+            %                     acrSNR(trialind,:,:)=    useSNR(ip,:,:);
+            %                     acrRTs(trialind)=    useRTs(ip,:);
+            %
+            %                 end
+            
+            %take mean across ppants for erp images..
+            acrBP= squeeze(nanmean(useBP,1));
+%             acrBP= squeeze(nanmean(useBP(21,:,:),1));
+            
+            acrSNR=squeeze(mean(useSNR,1));
+%             acrSNR=squeeze(nanmean(useSNR(21,:,:),1));
+            
+            
+            
+            
+            %sort across all
+            %sort trial index by longest RT first.
+            %%
+            figure(1)
+            hold on
+            %%
+            subplot(4,4,2:3)
+            
+            %         [sortedRTs, cid] = sort(acrRTs, 'descend');
+            
+            %
+            imagesc([-3:1/60:3], 1:size(acrBP,1), acrBP);%(cid,:));
+            %
+            title({[ num2str(chtype)]}, 'fontsize', 15)
+            c=colorbar;
+            ylabel(c, 'buttons pressed')
+            %                 ylabel('resampled catch trials')
+            xlim([-1.75 1.75])
+            set(gca, 'fontsize', 15, 'ytick', [])
+            hold on
+            plot([0 0] , ylim, ['w:'], 'linewidth', 3)
+            plot([0 0] , ylim, ['k:'], 'linewidth', 2)
+            %                 subplot(4,2,7)
+            
+            ppantMeanBP= squeeze(mean(useBP,2));
+            %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            x = ppantMeanBP;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+            %compute new stErr %which version?
+            %             stE = std(NEWdata)/sqrt(size(x,1));
+            %                 shadedErrorBar([-3:1/60:3], mean(ppantMeanBP,1),stE)
+            %                 set(gca, 'fontsize', 15)
+            %                 hold on;
+                            ylabel({['Normalized'];['trial count']})
+            %                 plot([0 0] , ylim, ['k:'], 'linewidth', 1)
+%             axis square
+            %%
+            xlabel(['Time from ' chtype])
+            
+            %SNR
+                placeis = hzcounter + 3;
+
+            subplot(4,3, placeis);
+            
+            %reorder SNR
+            acrSNRsort=acrSNR;
+            
+            %%
+            %                 %smooth across trials
+            sm_snrgrm20=zeros(size(acrSNRsort));
+            for itime=1:size(acrSNRsort,2)
+                sm_snrgrm20(:,itime)= smooth(acrSNRsort(:,itime),15);
+            end
+            
+            
+            %     imagesc(acrSNR);
+            imagesc(timeidDYN, 1:size(acrSNRsort,1), acrSNRsort);
+            c=colorbar;
+
+%             ylabel(c, {['RESS log(SNR)']})
+
+if hzis~=7    
+            title([num2str(usehz) ' Hz (' num2str(hzis) 'f)'])
+else
+            title([num2str(usehz) ' Hz (f2-f1)'])
+end
+%             title(['BG ' num2str(hzis) 'F'])
+            
+            hold on
+            plot([0 0] , ylim, ['k:'], 'linewidth', 3)
+            plot([0 0] , ylim, ['w:'], 'linewidth', 2)
+            
+            
+            xlim([-1.75 1.75])
+            set(gca, 'fontsize', 15, 'ytick', [])
+            %                 subplot(4,2,8)
+            %
+            %plot across ppant trace
+            ppantMeanSNR= squeeze(mean(useSNR,2));
+            
+            %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            x = ppantMeanSNR;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+        
+            xlabel(['Time from ' chtype])
+            ylabel({'Normalized'; 'trial count'})
+                caxis([ylimsare])
+%                 axis square
+                
+            set(gca, 'fontsize', 15)
+            cd(basefol)
+            set(gcf, 'color', 'w')
+            shg
+            if hzis==7;
+                ylabel(c, 'RESS log(SNR)')
+            end
+            
+            % beside this, plot the bar!
+            %grouped nPFI
+            %%
+            groupednPFISNR=nan(length(allppants), 3);  % for barchart
+            groupednPFISNR_ts=nan(length(allppants), 3, size(acrSNR,2));  % for SNR time-seriestrace
+            
+            if mod(itype,2)~=0 % odd nubers are for disappearances (
+            BPidx=181:361;
+            else
+                BPidx=1:180;
+            end
+                groupedBEHflpd = fliplr(squeeze(nanmean(acrBP(:,BPidx),2))'); %takes mean over all SNR timepoints.
+            %%
+            groupednPFISNR_thirds=nan(length(allppants),3);
+            
+            for ippant = 1:size(useBP,1); 
+%                % per ppant, collect trial indices:
+                ppant_BEH= squeeze(mean(useBP(ippant,:,BPidx),3)); %takes mean over all BP time points.
+                ppant_SNR=squeeze(mean(useSNR(ippant,:,:),3)); %takes mean over all SNR timepoints.
+                ppant_SNR_ts=squeeze(useSNR(ippant,:,:)); %takes mean over all SNR timepoints.
+               maxnPFI=ceil(max(ppant_BEH));
+%                
+               %flip BEH /SNR to correct orientation
+               ppantBEHflpd=fliplr(ppant_BEH);
+               ppantSNRflpd=fliplr(ppant_SNR);
+               ppant_SNR_ts=flipud(ppant_SNR_ts);
+               % only collect bin width.
+%              
+%                 nPFIidx = dsearchn(ppantBEHflpd', [0:3]');
+               nPFIidx = dsearchn(groupedBEHflpd', [0:4]');
+               
+               nPFIidx=unique(nPFIidx);
+               
+               if nPFIidx(1) ~=1
+                   nPFIidx(1)=1;
+               end
+               
+               %take mean for these trials (actually rows in trialxtrial)
+               for iPFI=1:length(nPFIidx)-1;
+                   
+                   try indices = nPFIidx(iPFI):nPFIidx(iPFI+1)-1;
+                   catch %if max
+                       indices = nPFIidx(iPFI):100;
+                   end
+                   
+                   if iPFI==4;
+                       shg
+                   end
+                   groupednPFISNR(ippant, iPFI)= squeeze(nanmean(ppantSNRflpd(indices)));
+                   
+                   
+                   groupednPFISNR_ts(ippant, iPFI,:)= squeeze(nanmean(ppant_SNR_ts(indices,:)));
+% %                    %
+%                    figure(3)
+%                    clf
+%                    plot(ppantSNRflpd);
+%                    hold on
+%                    plot([indices(1) indices(1)], ylim, ['k:'])
+%                    plot([indices(end) indices(end)], ylim, ['k:'])
+%                    title([num2str(squeeze(nanmean(ppantSNRflpd(indices))))])
+               end
+               
+% works well.  
+
+groupednPFISNR_quarters(ippant,1)= squeeze(nanmean(ppant_SNR(1:24)));
+groupednPFISNR_quarters(ippant,2)= squeeze(nanmean(ppant_SNR(25:50)));
+groupednPFISNR_quarters(ippant,3)= squeeze(nanmean(ppant_SNR(51:75)));
+groupednPFISNR_quarters(ippant,4)= squeeze(nanmean(ppant_SNR(76:100)));
+
+%                
+            end
+            %% using raw thirds?
+%             groupednPFISNR_thirds=fliplr(groupednPFISNR_thirds);
+%                         groupednPFISNR=fliplr(groupednPFISNR_thirds);
+%             groupednPFISNR
+            
+            %%
+            figure(1); 
+            if plotBarsorTimeseries==1
+   %place Bar charts beneath SNR
+            
+                placeis = hzcounter + 6;
+            
+         mbar=(nanmean(groupednPFISNR,1));
+         
+         
+         %adjust errorbars:
+          %adjust standard error as per COusineau(2005)
+            %confidence interval for within subj designs.
+            % y = x - mXsub + mXGroup,
+            x = groupednPFISNR;
+            
+            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant)
+            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+        stB=nanstd(NEWdata,1)./sqrt(length(allppants));
+        
+%             stB=nanstd(groupednPFISNR,1)./sqrt(length(allppants));
+        
+subplot(4,3, placeis)
+
+        b1=bar(mbar);        
+         b1.FaceColor=col;
+         hold on         
+         errorbar(mbar, stB, 'color', 'k','LineStyle', 'none')
+         
+set(gca, 'fontsize', 15, 'xticklabels', {'0\leq1', '1\leq2', '2\leq3', '\geq3'})
+xlabel('amount of PFI');
+         ylabel('RESS log(SNR)')
+         
+         colormap('viridis')
+ylim(ylimsare)            
+shg
+%             title([num2str(usehz) ' Hz (' num2str(hzis) 'f)'])
+% axis tight
+xlim([.5 4.5])
+            counter=counter+1;
+%%%%%%% ANOVA and LME stats if need be.             
+%             nppants=length(allppants);
+%             nconds = size(groupednPFISNR,2);
+%             %RMANOVA?
+%             dataan= reshape(groupednPFISNR, [nppants*nconds,1]);
+%             conds = [ones(nppants,1); ones(nppants,1)*2;ones(nppants,1)*3];
+%                 subs = repmat([1:length(allppants)]', [nconds,1]);
+%             
+%             [anret]=rmanova(dataan, conds, subs);
+% %%
+%             %LME to be sure:            
+%           tblA=table(dataan, conds, subs);
+%             
+%              UNterm1='dataan ~  conds + (1|subs)';
+% %              UNterm2='dataan ~  conds';
+%              UNterm2='dataan ~  1+ (1|subs)';
+%              %creating models:
+%              lmeUN =fitlme(tblA, UNterm1);
+%              lmeUN2 =fitlme(tblA, UNterm2);
+%              
+%     LMEout=compare(lmeUN2, lmeUN);
+            %%
+% %%
+            else % plot time series instead.
+%place Bar charts beneath SNR
+            
+                placeis = hzcounter+ 9;
+            
+            subplot(4,3,placeis);
+                tbase = timeidDYN;
+    lgsav=[];
+% can also plot time-series:
+for iPFI=1:4
+    x= squeeze(groupednPFISNR_ts(:,iPFI,:));
+    %adjust errorbars.
+    
+       
+            mXppant =squeeze( nanmean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+            mXgroup = nanmean(nanmean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+            
+            %             %compute new stErr %which version?
+            stE = nanstd(NEWdata)/sqrt(size(x,1));
+            %
+            hold on
+            sh=shadedErrorBar(tbase, nanmean(x,1),stE,['-'],[1]);
+                
+                sh.mainLine.Color = col;
+                sh.mainLine.LineWidth = iPFI*1.5;
+                sh.patch.FaceColor = col;
+                sh.edge(1).Color = col;
+                sh.edge(2).Color = col;
+                
+   lgsav(iPFI)= sh.mainLine; 
+end
+%%
+% legend([lgsav], [{'nPFI 0 \leq 1'}, {'nPFI 1 \leq 2'}, {'nPFI 2 \leq 3 or 4'}])
+%%
+set(gca,'fontsize', 15); set(gcf, 'color', 'w')
+xlabel(['time from ' chtype])
+ylabel('RESS log(SNR)')
+axis tight
+% ylim([ylimsare(1) ylimsare(2)])
+
+            end
+%%
+counter2=counter2+1;
+    
+            %%
+           
+       
+        end 
+        hzcounter=hzcounter+1;
+    end
+end
+    %%
+    shg
+    %%
+    
+    colormap('viridis')
+    cd(basefol)
+    cd('Figures')
+    cd('GFX Catch trial by trial')
+    shg
+     print('-dpng', ['Catch graded SNR summary graded, ' chtype '.png'])
+    
+    
+end
 
 
 if job.BPandSSVEPtimecourseacrossppants_group==1
 
     
     getelocs
+%     clf
     
     rmvbase=0;
     checksigON=0;
     checkcluster=0;
     
-    clf
+%     clf
     plcount=1;
     legendprint=[];
     cd(basefol)
@@ -2785,9 +3638,10 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
     linetypes={'--', '-', [],[],'--'};
     legendis=[];
     lgc=1;
-    clf
-    clearvars yl;
-    for hzis=[1,2]%[1,2]%
+%     clf
+figure(1); hold on;
+clearvars yl;
+    for hzis=2%[1,2]%[1,2]%
         usehz=peakfreqsare(hzis);
         
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
@@ -2800,7 +3654,7 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
         
         ttestdata=[];
         %         legendprint=[];
-        for itimezero=3%1:2
+        for itimezero=1:2%1:2
             
             switch itimezero
                 case 1
@@ -2884,17 +3738,20 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
             
             xlabel(['Time from ' chtype ' [s]'])%           
 %             xlabel(['Time from button release [s]'])
+xlabel('Time from reporting catch')
 
-if rmvbase~=1
-    ylabel({['RESS log(SNR), ' hzp]})
-end
             if itimezero==3
                 
                 ylabel({['\Delta RESS log(SNR)']})
                 
             else
-                ylabel({['mean subtracted'];['RESS log(SNR)']})
-               
+                
+                if rmvbase~=1
+                    ylabel({['RESS log(SNR), ' hzp]})
+                else
+                    ylabel({['mean subtracted'];['RESS log(SNR)']})
+                end
+                    
             end
             
             
@@ -3129,7 +3986,7 @@ end
     cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
 %     print('-dpng', ['PFI trace SSVEP summary, for msubtracted PFIreap.png'])
-    print('-dpng', ['PFI trace SSVEP summary, for PFIdisap-reap.png'])
+%     print('-dpng', ['PFI trace SSVEP summary, for PFIdisap-reap.png'])
 end
 
 if job.BPandSSVEPtimecourseacrossppants_group_CATCH==1
@@ -3138,15 +3995,15 @@ if job.BPandSSVEPtimecourseacrossppants_group_CATCH==1
    getelocs
     
     rmvbase=0;
-    checksigON=0;
-    checkcluster=0;
+    checksigON=1;
+    checkcluster=1;
     
     
     
     %perform subtraction = catch onset ioffset
-    catchdiff=1;
+    catchdiff=0;
     
-    clf
+%     clf
     plcount=1;
     legendprint=[];
     cd(basefol)
@@ -3154,25 +4011,26 @@ if job.BPandSSVEPtimecourseacrossppants_group_CATCH==1
     cd('GFX_EEG-RESS')
     %
     clf
-    %     cd('newplots-MD')
+figure(1); hold on;
+%     cd('newplots-MD')
     colsare={'b' , 'k',[],[],[],[],'m'}; % blue for tg, black for BG.
     hzare={'TG(f1)' , 'BG(f2)',[],[],[],[],'IM(f2-f1)'}; % blue for tg, black for BG.
     linetypes={'--', '-', '--','-','--'};
     legendis=[];
     lgc=1;
-    for hzis=[1,2]%[1,2]%
+    for hzis=7%[1,2]%[1,2]%
         usehz=peakfreqsare(hzis);
         
         load(['GFX_Catch_performance_withSNR_' num2str(usehz) '_min0_RESS'])
         
         DIMSare{5} = 'invisible catch onset';
-        
+        %1=catch onset 2= offset, 3= BPonset 4=BP offset
         tbase = timeidDYN;
         col=colsare{hzis};
         hzp= hzare{hzis};
         ttestdata=zeros(2, length(allppants), length(Nt));
         %         legendprint=[];
-        for itype=[3]%,4];%[1,5];%,3,4,5]%:5 6 
+        for itype=[3,4]%,4];%[1,5];%,3,4,5]%:5 6 
             
             linet=linetypes{itype};
             useBP=squeeze(storeacrossPpant_catchEVENTS_BPs(:,itype,:,:));

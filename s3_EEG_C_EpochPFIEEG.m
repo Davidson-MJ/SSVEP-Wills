@@ -21,7 +21,7 @@ dbstop if error
 
 
 
-job.epochperppant_PFI=1; %epochs raw EEG and labels according to number and direction of target PFI involved (still time-domain).
+job.epochperppant_PFI=0; %epochs raw EEG and labels according to number and direction of target PFI involved (still time-domain).
 
 
 job.erpimagePFIusingSNR=0; %freq domain within participant, any number of targets, just increasing or decreasing PFI.
@@ -34,8 +34,10 @@ job.erpimageacrossppants=0;
 
 job.concaterpdataacrossppants_keepnumberSeparate=0; %concats for sep num PFI, based on accum period after.
 
-job.concatTOPOTIMEacrossppants=0;
-job.plotTOPOtimeacrossppants=0; %%%%%%%%%%% use this to plot spatial correlation over time also (see job2 within).
+job.concatTOPOTIMEacrossppants=1;
+
+% TOPO TIME in new script for Will's data. 
+% job.plotTOPOtimeacrossppants=0; %%%%%%%%%%% use this to plot spatial correlation over time also (see job2 within).
 
 %%%%%%%
 job.BPandSSVEPtimecourseacrossppants=1; %this uses all/any PFI. (any duration, any number).
@@ -52,6 +54,19 @@ job.BPandSSVEPtimecourseacrossppants_dursSeparate=0; %this uses all/any PFI. (an
 % allppants=[1,2,4,6,9:16,18]; %
  allppants=[1,2,4,6,7,9:19]; % new
 
+ 
+ param_spcgrm.tapers = [1 1];
+param_spcgrm.Fs= [250];
+param_spcgrm.Fpass= [0 50];
+param_spcgrm.trialave=0;
+param_spcgrm.pad = 2;
+% movingwin=[2,.15]; % increase to 2.5?
+movingwin=[2.5,.25]; % 
+
+ peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
+
+% peakfreqsare=[15, 20, 30, 40, 5, 25, 35];
+ 
 if job.epochperppant_PFI==1
     cd(basefol)
     cd('Behaviour')
@@ -376,21 +391,18 @@ if job.erpimagePFIusingSNR==1
     %timing
     tt = 0:1/srate:60;
     
+    
+    
+    snrmethod=2; %1 for MXC division, 2 for convolution. (2=much faster)
     %%
     param_spctrm.tapers = [1 1];
     param_spctrm.Fs= [250];
     param_spctrm.fpass= [0 50];
     param_spctrm.trialave=0;
-    
-    param_spcgrm.tapers = [1 1];
-    param_spcgrm.Fs= [250];
-    param_spcgrm.fpass= [0 50];
-    param_spcgrm.trialave=0;
-    movingwin=[1,.15];
-    exclTransientBP=30;
+
     
     %%
-    for ifol = 1%allppants
+    for ifol = allppants
         for hzis=[1,2,3,4,7,8]
             switch hzis
                 case 1
@@ -604,27 +616,94 @@ if job.erpimagePFIusingSNR==1
                 %conv SNR
                 snr_sgrm =zeros(size(sgrm));
                 
-                
-                
-                kernelw= [-1/6 -1/6 -1/6 0 0 1 0 0 -1/6 -1/6 -1/6 ];
-                
-                
-                for itrial=1:size(sgrm,3)
-                    %compute SNR
-                    tmps= squeeze(sgrm(:,:,itrial));
-                    
-                    for itime= 1:size(tmps,1)
-                        checkput = conv(log(tmps(itime,:)), kernelw,'same');
-                        if ~isreal(checkput)
-                            snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
-                        else
-                            snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
-                        end
-                    end
-                end
-                
-                %store just stim freq.
-                [~, hzid]= min(abs(fgrm-usehz));
+                 tmps=sgrm;
+                            %adjust for HBW 
+                                k = ((param_spcgrm.tapers(1,1)));%
+                                hbw = (k+1)./ (2.*[movingwin(1,1)]);
+                                neighb = 2; %hz
+                                
+                                %space out kernel appropriately
+                                distz = dsearchn(fgrm', [hbw, neighb, neighb*2+hbw]');
+                                
+                                % we don't want odd numbers, messes with
+                                % calculations, so round allup to even.
+                                ods = find(mod(distz,2)~=0);
+                                %adjust.
+                                distz(ods)= distz(ods)+1;
+                                
+                                %make kernel
+                                kernelneighb = -1*(repmat(1/(distz(2)*2), [1, distz(2)]));
+                                kernelskip = zeros(1,distz(1));
+                                
+                                kernelw= [kernelneighb, kernelskip, 1, kernelskip, kernelneighb];
+                                if sum(kernelw)~=0
+                                    error('')
+                                end
+                            if snrmethod==1%method 1, using division.
+                                
+                               
+                                
+                                
+                                
+                                % loop over frequencies and compute SNR
+                                numbins = distz(2);
+                                skipbins = distz(1);
+                                snr_sgrm= zeros(size(sgrm));
+                                for itrial = 1:size(sgrm,3)
+                                for itime=1:size(tmps,1)
+                                    for hzi=numbins+1:length(fgrm)-numbins-1
+                                        numer = tmps(itime,hzi, itrial);
+                                        denom = nanmean( tmps(itime,[hzi-numbins:hzi-skipbins hzi+skipbins:hzi+numbins]) );
+                                        snr_sgrm(itime,hzi,itrial) = numer./denom;
+                                        
+                                    end
+                                end
+                                end
+                                
+                            else
+                                %                             %conv SNR
+                                %                             snr_sgrm =zeros(size(sgrm));
+                                %
+                                
+                                %%
+%                                 kernelw= [-1/8 -1/8 -1/8 -1/8 0 0 1 0 0 -1/8 -1/8 -1/8 -1/8];
+                                
+                                %snr on trials or
+                                for itrial=1:size(sgrm,3)
+                                    %compute SNR
+                                    tmps= squeeze(sgrm(:,:,itrial));
+                                    
+                                    for itime= 1:size(tmps,1)
+                                        checkput = conv(log(tmps(itime,:)), kernelw,'same');
+                                        if ~isreal(checkput)
+                                            snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
+                                        else
+                                            snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
+                                        end
+                                    end
+                                end
+                            
+                             %% sanity check:
+%                               figure(1);
+%                               %plot specgrm and spctrm.
+%                               subplot(221)
+%                             imagesc(tgrm, fgrm, squeeze(mean(log(sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(223)
+%                             mtrials=squeeze(mean(log(sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             %plot specgrm and spctrm.
+%                               subplot(222)
+%                             imagesc(tgrm, fgrm, squeeze(mean((snr_sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(224)
+%                             mtrials=squeeze(mean((snr_sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             hold on; 
+%                                % center kernel at 20 Hz
+%     hlfkern= (length(kernelw)-1)/2;
+%     [~,hzid]= min(abs(fgrm-20)); 
+%     fvector = (hzid- hlfkern):(hzid+hlfkern);
+%     plot(fgrm(fvector), kernelw*2, 'r')
+                            end
                 %%
                 %reduce size.
                 snrgrm20=squeeze(snr_sgrm(:,hzid,:));
@@ -748,30 +827,19 @@ if job.ppantPFI_topotime==1
     param_spctrm.Fpass= [0 50];
     param_spctrm.trialave=0;
     
-    param_spcgrm.tapers = [1 1];
-    param_spcgrm.Fs= [250];
-    param_spcgrm.Fpass= [0 50];
-    param_spcgrm.trialave=0;
-    movingwin=[1,.15];
-    
-    kernelw = [-.25 -.25 0 0 1 0  0 -.25 -.25];
-    
     %%
     for ifol = allppants
-        for hzis=1:2
-            switch hzis
-                case 1
-                    usehz=20;
-                case 2
-                    usehz=40;
-            end
+        
+        for hzis=[1,2,3,4,7];
+            usehz = peakfreqsare(hzis);
             
             
             
-            icounter=1;
-            
+            icounter=1;            
             cd(basefol)
-            cd(num2str(ifol))
+            cd('EEG')
+            cd(pdirs(ifol).name)
+            
             
             load(['ppant_PFI_Epoched'])
             
@@ -780,16 +848,16 @@ if job.ppantPFI_topotime==1
                     
                     %append them all. TARG-> Disappearing (more buttons
                     %pressed).
-                    datatouse = cat(1, ppant_SNREEG_PFI_0_1,ppant_SNREEG_PFI_1_2,ppant_SNREEG_PFI_2_3);
+                    datatouse = cat(1, ppant_SNREEG_PFI_0_1,ppant_SNREEG_PFI_1_2,ppant_SNREEG_PFI_2_3, ppant_SNREEG_PFI_3_4);
                    
                     ctype = 'PFI increase';
                     bsrem = [-3 -1]; %seconds
                     
                 else
                     
-                    datatouse = cat(1, ppant_SNREEG_PFI_1_0,ppant_SNREEG_PFI_2_1,ppant_SNREEG_PFI_3_2);
-                    RTstouse = [durs1_0'; durs2_1'; durs3_2'];
-                    BPstouse = cat(1, BPs1_0, BPs2_1, BPs3_2);
+                    datatouse = cat(1, ppant_SNREEG_PFI_1_0,ppant_SNREEG_PFI_2_1,ppant_SNREEG_PFI_3_2,ppant_SNREEG_PFI_4_3);
+%                     RTstouse = [durs1_0'; durs2_1'; durs3_2'];
+%                     BPstouse = cat(1, BPs1_0, BPs2_1, BPs3_2);
                     ctype = 'PFI decrease';
                     
                     
@@ -812,27 +880,103 @@ if job.ppantPFI_topotime==1
                 end
                 datais=bsdata;
                 %%
-                snr_grmout=zeros(64,size(datais,1),33);
+                snr_grmout=zeros(64,14); % chans by time points.
+%                 snr_grmout=zeros(64,size(datais,1),14);
                 for ichan=1:64
                     datacr=squeeze(datais(:,ichan,:));
+                    
                 [sgrm ,tgrm, fgrm] = mtspecgramc(datacr', movingwin, param_spcgrm);
                 %%
                 %conv SNR
-                snr_sgrm =zeros(size(sgrm));
-%                 kernelw=
-                for itrial=1:size(sgrm,3)
-                    %compute SNR
-                    tmps= squeeze(sgrm(:,:,itrial));
-                    
-                    for itime= 1:size(tmps,1)
-                        checkput = conv(log(tmps(itime,:)), kernelw,'same');
-                        if ~isreal(checkput)
-                            snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
-                        else
-                            snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
-                        end
-                    end
-                end
+                 tmps=sgrm;
+                            %adjust for HBW 
+                                k = ((param_spcgrm.tapers(1,1)));%
+                                hbw = (k+1)./ (2.*[movingwin(1,1)]);
+                                neighb = 2; %hz
+                                
+                                %space out kernel appropriately
+                                distz = dsearchn(fgrm', [hbw, neighb, neighb*2+hbw]');
+                                
+                                % we don't want odd numbers, messes with
+                                % calculations, so round allup to even.
+                                ods = find(mod(distz,2)~=0);
+                                %adjust.
+                                distz(ods)= distz(ods)+1;
+                                
+                                %make kernel
+                                kernelneighb = -1*(repmat(1/(distz(2)*2), [1, distz(2)]));
+                                kernelskip = zeros(1,distz(1));
+                                
+                                kernelw= [kernelneighb, kernelskip, 1, kernelskip, kernelneighb];
+                                if sum(kernelw)~=0
+                                    error('')
+                                end
+                                 snr_sgrm= zeros(size(sgrm));
+                            if snrmethod==1%method 1, using division.
+                                
+                               
+                                
+                                
+                                
+                                % loop over frequencies and compute SNR
+                                numbins = distz(2);
+                                skipbins = distz(1);
+                                snr_sgrm= zeros(size(sgrm));
+                                for itrial = 1:size(sgrm,3)
+                                for itime=1:size(tmps,1)
+                                    for hzi=numbins+1:length(fgrm)-numbins-1
+                                        numer = tmps(itime,hzi, itrial);
+                                        denom = nanmean( tmps(itime,[hzi-numbins:hzi-skipbins hzi+skipbins:hzi+numbins]) );
+                                        snr_sgrm(itime,hzi,itrial) = numer./denom;
+                                        
+                                    end
+                                end
+                                end
+                                
+                            else
+                                %                             %conv SNR
+                                %                             snr_sgrm =zeros(size(sgrm));
+                                %
+                                
+                                %%
+%                                 kernelw= [-1/8 -1/8 -1/8 -1/8 0 0 1 0 0 -1/8 -1/8 -1/8 -1/8];
+                                
+                                %snr on trials or
+                                for itrial=1:size(sgrm,3)
+                                    %compute SNR
+                                    tmps= squeeze(sgrm(:,:,itrial));
+                                    
+                                    for itime= 1:size(tmps,1)
+                                        checkput = conv(log(tmps(itime,:)), kernelw,'same');
+                                        if ~isreal(checkput)
+                                            snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
+                                        else
+                                            snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
+                                        end
+                                    end
+                                end
+                            
+                             %% sanity check:
+%                               figure(1);
+%                               %plot specgrm and spctrm.
+%                               subplot(221)
+%                             imagesc(tgrm, fgrm, squeeze(mean(log(sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(223)
+%                             mtrials=squeeze(mean(log(sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             %plot specgrm and spctrm.
+%                               subplot(222)
+%                             imagesc(tgrm, fgrm, squeeze(mean((snr_sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(224)
+%                             mtrials=squeeze(mean((snr_sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             hold on; 
+%                                % center kernel at 20 Hz
+%     hlfkern= (length(kernelw)-1)/2;
+%     [~,hzid]= min(abs(fgrm-20)); 
+%     fvector = (hzid- hlfkern):(hzid+hlfkern);
+%     plot(fgrm(fvector), kernelw*2, 'r')
+                            end
                 
                 %store just stim freq.
                 [~, hzid]= min(abs(fgrm-usehz));
@@ -860,8 +1004,8 @@ if job.ppantPFI_topotime==1
                     snrgrm20=acrSNRsort_rmv;
                 end
                 
-%                 snr_grmout(ichan,:)=squeeze(nanmean(snrgrm20,2));
-                snr_grmout(ichan,:,:)=snrgrm20';
+                snr_grmout(ichan,:)=squeeze(nanmean(snrgrm20,2));
+%                 snr_grmout(ichan,:,:)=snrgrm20';
                 end
                 %%
                 
@@ -880,18 +1024,15 @@ if job.ppantPFI_topotime==1
             
             
             %%
-            switch hzis
-                case 1
-                    savename='PFIperformance_withSNR_20';
-                case 2
-                    savename='PFIperformance_withSNR_40';
-            end
+            
+                    savename=['PFIperformance_withSNR_' num2str(usehz)];
+            
             
             
             save(savename,...
                 'Ppant_onsetSNR_allchan','Ppant_offsetSNR_allchan','-append');
                 
-            
+            disp([ 'fin all chan append for ' num2str(ifol)])
         end
     end
 end
@@ -905,19 +1046,11 @@ if job.concaterpdataacrossppants==1
     
     ppantsmoothing=1; % average across participants, after smoothing, or no.
     
-    for ihz=1:4
+    for ihz=[1:4,7]
         
-        switch ihz
-            case 1
-                loadname='PFIperformance_withSNR_15';
-            case 2
-                loadname='PFIperformance_withSNR_20';
-            case 3
-                loadname='PFIperformance_withSNR_30';
-            case 4
-                loadname='PFIperformance_withSNR_40';
-                
-        end
+        usehz=peakfreqsare(ihz);
+        loadname=['PFIperformance_withSNR_' num2str(usehz)];
+        
         storeacrossPpant_onsetBP=[];
         storeacrossPpant_onsetSNR=[];
         storeacrossPpant_onsetRTs=[];
@@ -1404,42 +1537,40 @@ if job.concaterpdataacrossppants_keepnumberSeparate==1
     
 end
     
-    
+    %%
 if job.concatTOPOTIMEacrossppants==1
-    for ihz=1:2
+    %%
+    for ihz=[1:4,7]
         
-        if ihz==1
-            loadname='PFIperformance_withSNR_20';
-        else
-            loadname='PFIperformance_withSNR_40';
-        end
-        storeacrossPpant_onsetSNR_chans=zeros(22,64,33);
-        storeacrossPpant_offsetSNR_chans=zeros(22,64,33);
+        usehz=peakfreqsare(ihz);
+        loadname=['PFIperformance_withSNR_' num2str(usehz) ];
+
+        storeacrossPpant_onsetSNR_chans=zeros(length(allppants),64,14);
+        storeacrossPpant_offsetSNR_chans=zeros(length(allppants),64,14);
         
         icounter=1;
         
         for ippant = allppants
             cd(basefol)
-            cd(num2str(ippant));
+            cd('EEG')
+            cd(pdirs(ippant).name);
             %onset types
             
             load(loadname)
-            storeacrossPpant_onsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_onsetSNR_allchan,2));
-            storeacrossPpant_offsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_offsetSNR_allchan,2));
+%             storeacrossPpant_onsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_onsetSNR_allchan,2));
+%             storeacrossPpant_offsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_offsetSNR_allchan,2));
+            storeacrossPpant_onsetSNR_chans(icounter,:,:)=Ppant_onsetSNR_allchan;
+            storeacrossPpant_offsetSNR_chans(icounter,:,:)=Ppant_offsetSNR_allchan;
             
             icounter=icounter+1;
         end
-        
+        %%
         cd(basefol)
-        cd('newplots-MD')
+        cd('EEG')
+        cd('GFX_Pre-RESS')
+        %%
         
-        
-        switch ihz
-            case 1
-                savename=['GFX_PFIperformance_withSNR_20_allchan'];
-            case 2
-                savename=['GFX_PFIperformance_withSNR_40_allchan'];
-        end
+        savename=['GFX_PFIperformance_withSNR_' num2str(usehz) '_allchan'];
         
         save(savename, 'storeacrossPpant_onsetSNR_chans',...
             'storeacrossPpant_offsetSNR_chans', 'tgrm');
@@ -1447,486 +1578,13 @@ if job.concatTOPOTIMEacrossppants==1
     end
     
 end
-
-if job.plotTOPOtimeacrossppants==1
-    clearvars -except job basefol
-    getelocs;
-    cd(basefol)
-    
-    cd('newplots-MD')
-   
-    %% %% %
-    job2.plotSpacedTimetopo=1;
-    job2.plotMeanTIMEtopo_andtvals=0;
-    job2.plotSpatialCorrelation_overtime=0;
-    %
-%
-%
-%
-%
-%
-%
-%
-%
-    
-    if job2.plotSpacedTimetopo==1
-   cd(basefol)
-   cd('newplots-MD')
-        icount=1;
-%     colormap('parula')
-  for itimezero=1:2; %onset and offset
-    for ihz=1:2
-
-        switch ihz
-            case 1
-        load('GFX_PFIperformance_withSNR_20_allchan')
-        titlep='1st harmonic';
-            case 2
-                load('GFX_PFIperformance_withSNR_40_allchan')
-                titlep='2nd harmonic';
-        end
-      
-            switch itimezero
-                case 1
-                    dPLOT = storeacrossPpant_onsetSNR_chans;
-                    TIMING = [0];
-%                     titlep=
-                case 2
-                    dPLOT = storeacrossPpant_offsetSNR_chans;
-                    TIMING = [0];
-            end
-        
-        %
-%     TIMING = [  -.5 -.4 -.2 0 .2 .4 .5];
-            figure(1)
-    
-    timeIND = dsearchn([tgrm-3]', TIMING');
-    %%
-    hold on
-    pvals=nan(64,length(timeIND));
-    tvals=nan(64,length(timeIND));
-    for itime=1:length(timeIND)
-        
-        subplot(2,2,icount)
-        
-        tid= timeIND(itime);
-%         if itimezero==1
-            ipl=itime;
-%         else
-%                 ipl=itime+length(timeIND);
-%         end
-           ipl= ipl + (length(TIMING)*(ihz-1));
-        % plot sig. 
-        timeTOPO=squeeze(dPLOT(:,:,tid));
-        
-        for ichan=1:64
-            [~,pvals(ichan,itime),~, stat]= ttest(timeTOPO(:,ichan), 0, 'tail', 'both');
-            tvals(ichan,itime)=stat.tstat;
-                        
-        end
-        q=fdr(pvals(:),.05);
-        pmask = (pvals(:,itime)<q);
-        
-        
-%         subplot(2,length(timeIND),ipl)
-%         subplot(1,2,ipl)
-       tp= topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'pmask', pmask, 'conv', 'on'); 
-       %else plot tscores
-%        tp= topoplot(tvals, elocs(1:64), 'pmask', pmask, 'conv', 'on'); 
-       
-       caxis([0 1])
-       set(findobj(gca,'type','patch'),'facecolor',get(gcf,'color'))
-       
-%         topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'emarker2', {find(pmask), 'o', 'w', 2}); caxis([-1 1])
-%         if itime==length(timeIND)
-            c=colorbar;
-            
-            ylabel(c, 'log(SNR)');
-%         end
-%         title([ sprintf('%.2f',(tgrm(tid)-3)) ' s'])
-        title(titlep)
-        set(gca, 'fontsize', 25)
-        icount=icount+1;
-    end
-        end
-c=colormap('jet');        %
-c(1,:)=[ 0 0 0];
-colormap(c)
-%         subplot(3,1,3)
-%         colorbar; caxis([-1 1])
-        set(gcf, 'color', 'w')
-    end
-    %%
-    cd('figures')
-    print('-dpng', 'Offset - spatial correlation')
-    end
-    if job2.plotMeanTIMEtopo_andtvals==1
-        %%
-        cd(basefol)
-        cd('newplots-MD')
-%looking at PFIINC>PFIdec
-        %         timewinds = [-3 -1.1]; %'20Hz early'
-%         timewinds = [-.75 .25];%'20Hz late'
-
-%         timewinds = [-3 -1.5]; %'40Hz early'
-%         timewinds = [-.5 0];%'40Hz late'
-
-%looking at baseline:
-% timewinds=[-1 0.24]; %PFI increase 20Hz from baseline
-% timewinds=[-1.28 0.1]; %PFI increase 40Hz from baseline
-% 
-% timewinds=[-.52 1.8]; %PFI decrease 20Hz from baseline
-% timewinds=[-.5 .5]; %PFI decrease 40Hz from baseline
-        ipl=1;
-        clf
-        
-        %only use for offsets.
-        rmvbase=0;
-        
-        
-        
-     for ihz=1%1:2%:2;
-         cd(basefol)
-        cd('newplots-MD')
-        switch ihz
-            case 1
-        load('GFX_PFIperformance_withSNR_20_allchan')
-            case 2
-                load('GFX_PFIperformance_withSNR_40_allchan')
-        end
-        dPLOT=[];
-                    dPLOT(1,:,:,:) = storeacrossPpant_onsetSNR_chans;
-                 
-                    
-                    if rmvbase==1
-                        bsrem=[-3 -1];
-                        tbase=tgrm-3;
-                        tmp = zeros(size(storeacrossPpant_offsetSNR_chans));
-                        tIND = dsearchn(tbase', [bsrem]');
-                        for ippant=1:size(storeacrossPpant_offsetSNR_chans,1)
-                            for itrial = 1:size(storeacrossPpant_offsetSNR_chans,2)
-                                tbase = squeeze(nanmean(storeacrossPpant_offsetSNR_chans(ippant,itrial,tIND(1):tIND(2)),3));
-                                rbase = repmat(tbase, [1  size(storeacrossPpant_offsetSNR_chans,3)]);
-                                
-                                tmp(ippant,itrial,:) =squeeze(storeacrossPpant_offsetSNR_chans(ippant,itrial,:))' - rbase;
-                            end
-                        end
-                        storeacrossPpant_offsetSNR_chans=tmp;
-                    end
-                    
-                    dPLOT(2,:,:,:) = storeacrossPpant_offsetSNR_chans;
-        
-            
-        
-        %
-%     TIMING = [  -.5 -.4 -.2 0 .2 .4 .5];
-    
-    timeIND = dsearchn([tgrm-3]', timewinds');
-    %
-    hold on
-    %take mean over timewindow
-    dTest= mean(dPLOT(:,:,:,timeIND(1):timeIND(2)),4);
-    
-    pvals=[];
-    tvals=[];
-    
-               
-        for ichan=1:64
-            [~,pvals(ichan),~, stat]= ttest(squeeze(dTest(2,:,ichan)));
-%             [~,pvals(ichan),~, stat]= ttest(squeeze(dTest(1,:,ichan)), squeeze(dTest(2,:,ichan)));
-            tvals(ichan)=stat.tstat;                        
-        end
-        pmask = (pvals<.05);
-        %
-        topoplot(tvals, elocs(1:64), 'pmask', pmask)
-        shg
-        checkchans=find(pmask);
-        % perform spatial cluster FDR:
-            %% compare the increase in ASH to zero (since a diff already)
-        % extract tvalues at spatially coincident p<05 electrodes,
-        %(uncorrected)
-
-%         checkchans= [25,62,30,61,29,63,31]; % PFI 20Hz, early.
-%         checkchans= [29,30,61:63]; % PFI 20Hz, late.
-% checkchans= [4 9 18 23 24 25 26 29 30 47 54 56 57 58 60 62 63];
-% checkchans=[10,44,53,58,59,26,60:63,29:31];
-        tvalsperchan = tvals(checkchans);
-        
-         % this the accrued test statistic (total), we have to 
-% check against, after shuffling the data (Maris&Oostenveld)
-         observedCV = sum(abs(tvalsperchan));
-         %
-        % now repeat the above process, but create random samples:
-       sumTestStatsShuff = zeros(1,2000);
-        for irand = 1:2000
-            %testing the null that it isn't mismatched - matched at time 2 
-            % which creates a diff. so select from either!
-            shD= zeros(2,length(tvalsperchan),21);
-            for ipartition = 1:2
-                for ippant = 1:21
-                    for chan=1:length(checkchans)
-                    if mod(randi(100),2)==0 %if random even number
-                    pdata = dTest(1,randi(21), checkchans(chan)); %select both chans
-
-                    else %
-                                            pdata = dTest(2,randi(21), checkchans(chan)); %select both chans
-
-                    end
-                
-                shD(ipartition,chan,ippant) = pdata;
-                    end
-                end
-            end
-        
-        %now compute difference between out hypothetical topoplots,
-        % and test for sig, checking the accumulated test statistic at our
-        % chans of interest
-            tvalsperchan = zeros(1,length(checkchans));
-            if length(checkchans>1)
-            testdata = squeeze(shD(1,:,:)) - squeeze(shD(2,:,:));
-            else
-                testdata = (shD(1,:,:)) - (shD(2,:,:));
-                testdata=testdata';
-            end
-            
-            for itest = [1:length(checkchans)] %test each channel
-               
-                if length(checkchans)>1
-                [~, p, ~,stat]= ttest(testdata(itest,:));
-                else
-                    [~, p, ~,stat]= ttest(testdata);
-                end
-                
-                tvalsperchan(1,itest) = stat.tstat;
-            end
-            
-            sumTestStatsShuff(1,irand) = sum(abs(tvalsperchan));
-        end %repeat nshuff times
-        %
-        subplot(211)
-        %plot histogram:
-        H=histogram(abs(sort(sumTestStatsShuff)));
-        % fit CDF
-        cdf= cumsum(H.Data)/ sum(H.Data);
-        %the X values (actual CV) corresponding to .01
-        [~,cv05uncorr] = (min(abs(cdf-.95)));
-        [~,cv01uncorr] = (min(abs(cdf-.99)));
-        [~,cv001uncorr] = (min(abs(cdf-.999)));
-        %THE Q VALUE FOR OUR OBSERVED DATA:
-        
-        
-        hold on
-         pCV=plot([observedCV observedCV], ylim, ['r-']);
-         p05=plot([H.Data(cv05uncorr) H.Data(cv05uncorr)], ylim, ['k:']);
-         plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k:']);
-         plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k:']);
-         legend([pCV p05], {['observed'] ['p005'] })
-         % what is the Pvalue? 
-         
-         %
-         if observedCV>H.Data(cv05uncorr)
-             %observed pvalue in distribution=
-                    [~, c2] = min(abs(H.Data-observedCV)); %closest value.
-                    pvalis= 1-cdf(c2);
-             title({['Spatial Cluster  Significant!'];['Tvals = ' num2str(observedCV) ', p =' num2str(pvalis)]})
-             %display Q
-%              checkchans= [25,62,30,61,29,63,31];
-             pmaskchecked = zeros(1,64);
-             pmaskchecked(checkchans)=1;
-         else
-             title('Spatial Cluster  ns!')
-         end
-    
-        
-        
-        
-        
-        
-        
-        
-        %%
-        subplot(2, 1, 2) ; 
-% pmaskchecked(9)=[0]; PFI in 20 vs 0
-% pmaskchecked(39)=[0]; %PIF in 40 vs 0
-
-% pmaskchecked(45)=[0];pmaskchecked(19)=[0]; %PIF in 40 vs 0
-
-        tp=topoplot(tvals, elocs(1:64), 'pmask', pmaskchecked, 'conv', 'on');
-%         topoplot(tvals, elocs(1:64), 'emarker2', {find(pmask), 'o', 'w', 20}); 
-        
-        c= colorbar;
-        ylabel(c, 't-value')
-        caxis([-4 4])
-        set(c, 'location', 'Eastoutside')
-        set(gca, 'fontsize', 25)
-        %%
-        title({['\it p \rm\bf < .001 for'];[sprintf('%.2f',tgrm(timeIND(1))-3) ' to ' sprintf('%.2f',(tgrm(timeIND(2))-3)) 's']})
-        %%
-        set(gcf, 'color', 'w')
-        cd(basefol)
-        cd('newplots-MD')
-        cd('figures')
-       
-        shg
-     end
-     %%
-    shg
-    set(gcf, 'color', 'w')
-     print('-dpng', 'Topo PreBP 20Hz late PFIin>PFIde.png')
-    end
-    
-    
-    
-    
-    
-    
-         if  job2.plotSpatialCorrelation_overtime==1;
-                 cd(basefol)
-        cd('newplots-MD')
-             figure(2)
-            clf
-               
-            selectchans=[1:64]; %use whole head
-%             selectchans = [23:32,56:64]; % parieto-occipital only
-            
-                         load('GFX_PFIperformance_withSNR_20_allchan')
-               onsetChans_20 = storeacrossPpant_onsetSNR_chans;
-               offsetChans_20 = storeacrossPpant_offsetSNR_chans;
-                         load('GFX_PFIperformance_withSNR_40_allchan')
-                 onsetChans_40 = storeacrossPpant_onsetSNR_chans;
-               offsetChans_40 = storeacrossPpant_offsetSNR_chans;
-                 
-               %%
-               figure(1); clf
-               leg=[];
-               ttestdata= zeros(2, size(onsetChans_20,1),size(onsetChans_20,3));
-               for iPFIdir=1:2%1:2 %onset and offset
-                  hold on
-                   switch iPFIdir
-                       case 1
-                           d1=onsetChans_20;
-                           d2=onsetChans_40;
-                           chis= 'target invisible';
-                   %calculate spatial correlation over time:
-                   colis='b';
-                       case 2
-                           d1=offsetChans_20;
-                           d2=offsetChans_40;
-                           chis= 'target visible';
-                           colis='k';
-                   end
-                   
-                   
-                   
-                   
-                   %if restricting the channels for comparison
-                   d1=d1(:,selectchans,:);
-                   d2=d2(:,selectchans,:);
-                   
-                   
-                   
-                   corr_time = zeros(size(d1,1), size(d1,3));
-%                    p_time = zeros(size(d1,1), size(d1,3));
-                   % per ppant, calculate corr over time
-                   for ippant = 1:size(d1,1)
-                      for itime= 1:size(d1,3)
-                       
-%                              scatter(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
-                          [r,p]= corr(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
-                       corr_time(ippant,itime)=r;
-%                        p_time(ippant,itime)=r;
-                      end
-                                             
-                   end
-                   
-                   
-                   
-                   %within subj error bars
-                   
-                    
-            %adjust standard error as per COusineau(2005)
-            %confidence interval for within subj designs.
-            % y = x - mXsub + mXGroup,
-            x = corr_time;
-            
-            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
-            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
-            
-            %for each observation, subjtract the subj average, add
-            %the group average.
-            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
-            
-                   
-                   corr_time=NEWdata;
-                   
-                   
-%                    subplot(1,2,iPFIdir)
-                   mP= squeeze(mean(corr_time,1));
-                   
-                   
-                   stP = std(corr_time)/sqrt(size(corr_time,1));
-                   
-                   
-                   st=shadedErrorBar(tgrm-3, mP, stP,[],1);
-                   st.mainLine.Color= colis;
-                   st.mainLine.LineWidth=3;
-                   st.patch.FaceColor=colis;
-                   st.edge(1).Color=colis;
-                   st.edge(2).Color=colis;
-                   
-                   leg(iPFIdir)=st.mainLine;
-                   
-%                    ylim([-.1 .3])
-axis tight
-                  xlim([-2.5 2.5])
-                   
-                   
-                   
-                   ylabel({['1st and 2nd harmonic'];['spatial correlation']})
-%                    xlabel(['Time from ' chis ])
-                   xlabel(['Time from reporting'])
-                   set(gca, 'fontsize', 25)
-                   set(gcf, 'color', 'w')
-                  
-                   ttestdata(iPFIdir,:,:) =x;
-                   
-                   
-               end
-               
-               %plot sig
-               pvals = zeros(1,size(ttestdata,3));
-               for itime=1:size(ttestdata,3)
-                   
-                   [h, pvals(itime) ]= ttest(ttestdata(1,:,itime), ttestdata(2,:,itime)) ;
-                                  
-               end
-               q=fdr(pvals, .05);
-               sigspots = find(pvals<.05);
-               
-               for itime = 1:length(sigspots)
-                   
-                   rtime = sigspots(itime);
-                   hold on
-                   
-                   %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', sh.mainLine.Color)
-                   plot(tgrm(rtime)-3, .66, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
-               end
-               legend([leg(1) leg(2)], {'target invisible' 'target visible'})
-               ylim([.475 .675])
-             %%
-             cd('Figures')
-             %%
-             print('-dpng', 'SpatialCorrelation BG freqs')
-         end
-    
-         
-         %and topos
-         
-    
-     
-end
-   
-
+% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %   TOPO time plotted in a sep script for Will's data).
+% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %
+%%
 
 if job.erpimageacrossppants==1
     %% now plot across ppants.

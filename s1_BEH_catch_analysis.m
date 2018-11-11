@@ -27,9 +27,9 @@ job.sortCatchtracesbynumTargets=0; %onset and offsets. appended to 'catch perfor
 job.calcNEWShuffledCatchOnsetBPProb=0; %!  ! ! ! new ver MD # 04/18.
 %  ! ! ! ! !
 
-job.calcMissedcatchesbyTargperppant=1; % this appends to Catch Struct -> highlights those potentially missed catches in the all trials plots.
+job.calcMissedcatchesbyTargperppant=0; % this appends to Catch Struct -> highlights those potentially missed catches in the all trials plots.
 
-job.plotCatchtracesbynumTargets_eachppant=0;  % also plots overall RTs to catch onset/offset.
+job.plotCatchtracesbynumTargets_eachppant=1;  % also plots overall RTs to catch onset/offset.
 job.plotCatchtracesbynumTargets=0; % not really by num targets, plots vs shuffled.
 
 
@@ -906,15 +906,15 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
         if onsetoroffset==1
 %             datais=catchBP_ProbtraceperPpant_by_numtargetsabsent;
             datais=catchBP_ProbtraceperPpant_onetothreetargets_mean;
-            col = ['g'];
+            col = ['r'];
             xt=xtONSET;
-                eventis= 'removal' ;
+                eventis= 'onset' ;
         
         else
             datais=catchBP_ProbtraceperPpantOFFSET_by_numtargetsabsent;
             col = ['r'];
             xt=xtOFFSET;
-                eventis= 'return' ;
+                eventis= 'offset' ;
         
         end
         %%
@@ -927,8 +927,8 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
             %filtered seems better due to the large amount of
             %disappearances
             
-        for ippant=1:nppants
-            subplot(4,5,ippant)
+        for ippant=1%:nppants
+%             subplot(4,5,ippant)
             RT=[];
             %% plot results of shuffled
           
@@ -966,7 +966,7 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
         end
 %%
         %plot median for shuffle        
-              shf=plot(xt, squeeze(nanmedian(shuffdata,1)), 'color', 'm');
+              shf=plot(xt, squeeze(nanmedian(shuffdata,1)), 'color', [.2 .2 .2]);
             hold on 
             %add patch for shuffled data
             %Calculate the error bars
@@ -982,7 +982,7 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
             xP(isnan(yP))=[];
             yP(isnan(yP))=[];
             
-            colsh='m';
+            colsh=[.2 .2 .2];
             H.patch=patch(xP,yP,1,'facecolor',colsh,...
                 'edgecolor','none',...
                 'facealpha',.15);
@@ -1081,14 +1081,13 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
             colis = 'r';
             end
             
-            try sigt=plot(placement, placeY, '*','color', colis, 'markersize', 5, 'linewidth', 3);
+             try plot([placement placement], [0 1], '--','color', 'b', 'linewidth', 1);
                 placementT=1;
             catch
                 placementT=0;
             end
-        
 
-title(['Subject ' num2str(ippant)]);
+title(['Participant ' num2str(ippant)]);
 set(gca, 'fontsize', 15)
             ylim([ 0 1])
 %         xlabel('onset')
@@ -1112,7 +1111,15 @@ cd ../
     
     end
     %%
-    print('-dpng', 'Timecourse of each CatchDisap BP, by ppant (catch combined) filtered')
+        %% if plotting single ppant:
+      xlabel(['Time from catch ' eventis ' [sec]'], 'fontsize', 15)
+        
+        ylabel('P(Button Press)', 'fontsize', 15)
+
+        set(gca, 'fontsize', 1.5*fontsize)
+    
+    print('-dpng', 'Example single participant')
+%     print('-dpng', 'Timecourse of each CatchDisap BP, by ppant (catch combined) filtered')
     
     
     %% also plot bar
