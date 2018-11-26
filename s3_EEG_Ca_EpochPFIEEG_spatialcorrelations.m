@@ -10,158 +10,357 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
  allppants=[1,2,4,6,7,9:19]; %
 
     %% %% %
-    job2.plotSpacedTimetopo=0;
+    job2.plotSpacedTimetopo=1; %1 x 4 topos
+    job2.plotComparativeTimetopo = 0; % new version, settled on - 0.5s, compares two topos at Disap and Reap in 2x2
     job2.plotMeanTIMEtopo_andtvals=0;
-    job2.plotSpatialCorrelation_overtime=1; % this is for the harmonics.
+    job2.plotSpatialCorrelation_overtime=1; % this is for 
     job2.plotgroupedSNRovertime=0;
     
     
-%     job2.plotSpatialCorrelation_overtime=0; % this is for the different stimuli (TGs, BGs etc).
 %
 %
 %
 %
 
 %subtract mean per channel first?
-normEEGcorr=0;
+normEEGcorr=1;
 
 %
 %
 %
+
+
+ %%%%% which data type to plot?
+%     usePFIorCatch=2; % 1 for PFI, 2 for Catch.
 %
 getelocs;
 
 if job2.plotSpacedTimetopo==1
     cd(basefol)
-    cd('GFX_EEG-RESS')
-    
+    cd('GFX_Pre-RESS')
+    %%
     icount=1;
+    clf
     %     colormap('parula')
-    for itimezero=2%1:2; %onset and offset
+    peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!
+    for usePFIorCatch=2%1:2
         
-        for ihz=1:2
+        if usePFIorCatch==1
+            useD='PFI';
+        else
+            useD='Catch';
+        end
+        
+        
+        cmaxbyHz = [.5, .5, .1,.1,.1];
+        
+        for ihz=[1,2,3,4,7]
+            usehz = peakfreqsare(ihz);
+            cd(basefol)
+            cd('GFX_Pre-RESS')
+            clf
             
-            switch ihz
-                case 1
-                    load('GFX_PFIperformance_withSNR_20_allchan')
-                    titlep='1f';
-                case 2
-                    load('GFX_PFIperformance_withSNR_40_allchan')
-                    titlep='2f';
-            end
-            
-            switch itimezero
-                case 1
-                    dPLOT = storeacrossPpant_onsetSNR_chans;
-                    
-                    %                     titlep=
-                case 2
-                    dPLOT = storeacrossPpant_offsetSNR_chans;
-                    
-            end
-            TIMING = [-1.5 -1 -0.5 0 .5];
-            TIMING = [-1.5 -1 -0.5 0 .5]-1;
-            
-            
-            %adjust topo values by mean subtraction per eeg channel?
-            if normEEGcorr==1;
-                dPLOTtmp=zeros(size(dPLOT));
+            load(['GFX_' useD 'performance_withSNR_' num2str(usehz) '_allchan'])
+            icount=1;
+            for itimezero=1:2%onset and offset
                 
-                for ippant=1:size(dPLOT,1)
-                    for ichan = 1:size(dPLOT,2)
-                        prevsnr=squeeze(dPLOT(ippant,ichan,:));
-                        thism=squeeze(mean(dPLOT(ippant,ichan,:)));
-                        tmpsub= repmat(thism, [1, size(prevsnr,2)]);
-                        dPLOTtmp(ippant,ichan,:) = prevsnr-tmpsub;
+                
+                
+                switch itimezero
+                    case 1
+                        dPLOT = storeacrossPpant_onsetSNR_chans;
+                        dirtype = 'disappearance';
+                        %                     titlep=
+                    case 2
+                        dPLOT = storeacrossPpant_offsetSNR_chans;
+                        dirtype = 'reappearancee';
+                end
+                TIMING = [ -.5 0.5 ];
+                
+                
+                
+                %adjust topo values by mean subtraction per eeg channel?
+                if normEEGcorr==1;
+                    dPLOTtmp=zeros(size(dPLOT));
+                    
+                    for ippant=1:size(dPLOT,1)
+                        for ichan = 1:size(dPLOT,2)
+                            prevsnr=squeeze(dPLOT(ippant,ichan,:));
+                            thism=squeeze(mean(dPLOT(ippant,ichan,:)));
+                            tmpsub= repmat(thism, [1, size(prevsnr,2)]);
+                            %subtract channel mean from snr data.
+                            dPLOTtmp(ippant,ichan,:) = prevsnr-tmpsub;
+                        end
+                        
+                    end
+                    dPLOT=dPLOTtmp;
+                    
+                    
+                    
+                end
+                
+                
+                
+                
+                
+                figure(1)
+                
+                timeIND = dsearchn([tgrm-3]', TIMING');
+                %%
+                %     icount=1
+                
+                hold on
+                pvals=nan(64,length(timeIND));
+                tvals=nan(64,length(timeIND));
+                ipl=1;
+                for itime=1:length(timeIND)
+                    
+                    subplot(1,4,icount)
+                    
+                    tid= timeIND(itime);
+                    ipl= ipl + (length(TIMING)*(ihz-1));
+                    
+                    
+                    
+                    %remove mean per channel?
+                    
+                    
+                    
+                    
+                    % plot sig.
+                    timeTOPO=squeeze(dPLOT(:,:,tid));
+                    
+                    for ichan=1:64
+                        [~,pvals(ichan,itime),~, stat]= ttest(timeTOPO(:,ichan), 0, 'tail', 'both');
+                        tvals(ichan,itime)=stat.tstat;
+                        
+                    end
+                    q=fdr(pvals(:),.05);
+                    pmask = (pvals(:,itime)<q);
+                    
+                    
+                    %         subplot(2,length(timeIND),ipl)
+                    %         subplot(1,2,ipl)
+                    %        tp= topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'pmask', pmask, 'conv', 'on');
+                    tp= topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'conv', 'on');
+                    
+                    %else plot tscores
+                    %        tp= topoplot(tvals, elocs(1:64), 'pmask', pmask, 'conv', 'on');
+                    
+                    set(findobj(gca,'type','patch'),'facecolor',get(gcf,'color'))
+                    if normEEGcorr==1
+                        caxis([-.15 .15]);
+                    else
+                        %                         caxis([0 max(squeeze(mean(dPLOT(:,:,tid),1)))])
+                        caxis([0 cmaxbyHz(ihz)])
+                    end
+                    %plot colorbar?
+                    if icount==5
+                        c= colorbar;
+                        ylabel(c, [ num2str(usehz) ' Hz, log(SNR)']);
+                        ylabel(c, ['\Delta log(SNR)']);
+                        
+                        
                     end
                     
+                    
+%                     title({[ num2str(TIMING(itime)) 's']})
+                    set(gca, 'fontsize', 25)
+                    icount=icount+1;
                 end
-                dPLOT=dPLOTtmp;
                 
+                %%
                 
+                c=colormap('viridis');        %
+                %%
+%                 c(1,:)=[ 0 0 0];
+                colormap(c)
+                %         subplot(3,1,3)
+                %         colorbar; caxis([-1 1])
+                set(gcf, 'color', 'w')
                 
+                %%
             end
+                %%
+                cd(basefol)
+                cd ../
+                cd(['Figures' filesep 'GFX spatial correlations'])
+                %%
+%                 suptitle(['Top row ' useD ' Disappearance, bottom row  ' useD ' reappearance'])
+                
+                print('-dpng', ['SNR Topo time for ' num2str(usehz) ' during ' useD ' normalized'])
             
+        end
+    end
+end
+
+
+if job2.plotComparativeTimetopo==1
+    cd(basefol)
+    cd('GFX_Pre-RESS')
+    %%
+    icount=1;
+    
+    %     colormap('parula')
+    peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!
+    ymaxperfreq = [1, 1, .5, 1, .5 , .5, .1, .5, .5];
+    for usePFIorCatch=1:2
+        
+        if usePFIorCatch==1
+            useD='PFI';
+        else
+            useD='Catch';
+        end
+        
+        
+    onsetChans_both= zeros(2, 16, 64, 14);
+    offsetChans_both= zeros(2, 16, 64, 14);
+    
+    
+    %cycle through them all.
+    hzcompareAll = [1, 2; 1,3;1,4;1,7;...
+                 2, 3; 2,4;2,7;...
+                 3,4;3,7;4,7];
+    
+             
+    for allhzcombos = 1:size(hzcompareAll,1)
+    hzcounter=1;
+    hzcompare= hzcompareAll(allhzcombos,:);
+    
+    
+    cd(basefol)
+    cd('GFX_Pre-RESS')
+    figure(1)
+    clf
+    
+    
+    for ihz = hzcompare
+        usehz= peakfreqsare(ihz);
+        load(['GFX_' useD 'performance_withSNR_' num2str(usehz) '_allchan'])
+        onsetChans_both(hzcounter,:,:,:) = storeacrossPpant_onsetSNR_chans;
+        offsetChans_both(hzcounter,:,:,:) = storeacrossPpant_offsetSNR_chans;        
+        hzcounter=hzcounter+1;
+    end
+    
+    %
+    onsetChans_20=squeeze(onsetChans_both(1,:,:,:));
+    offsetChans_20=squeeze(offsetChans_both(1,:,:,:));
+    onsetChans_40=squeeze(onsetChans_both(2,:,:,:));
+    offsetChans_40=squeeze(offsetChans_both(2,:,:,:));
+    
+    figure(1); 
+    leg=[];
+%     ttestdata= zeros(2, size(onsetChans_20,1),size(onsetChans_20,3));
+    
+for isubplot = 1:4
+    switch isubplot
+        case 1
+            dPLOT=onsetChans_20; 
+            hzused = peakfreqsare(hzcompare(1));
+        case 2
+            dPLOT=onsetChans_40;
+            hzused = peakfreqsare(hzcompare(2));
+        case 3
+            dPLOT=offsetChans_20; 
+            hzused = peakfreqsare(hzcompare(1));
+        case 4
+            dPLOT=offsetChans_40;
+            hzused = peakfreqsare(hzcompare(2));
+    end
+    % this orders the topos side by side ina  2 x2 .
             
-            
-            
-            
-            figure(1)
-            
-            timeIND = dsearchn([tgrm-3]', TIMING');
-            %%
-            %     icount=1
-            
-            hold on
-            pvals=nan(64,length(timeIND));
-            tvals=nan(64,length(timeIND));
-            ipl=1;
-            for itime=1:length(timeIND)
+    
+    %set ymx
+    hid = find(peakfreqsare==hzused);
+    ymax = ymaxperfreq(hid);
+    
+        
+                % single TIME.
+                TIMING = [-.5 ];
                 
-                subplot(2,length(TIMING),icount)
+                figure(1)
                 
-                tid= timeIND(itime);
-                ipl= ipl + (length(TIMING)*(ihz-1));
+                timeIND = dsearchn([tgrm-3]', TIMING');   
                 
-                
-                
-                %remove mean per channel?
-                
-                
-                
-                
-                % plot sig.
-                timeTOPO=squeeze(dPLOT(:,:,tid));
-                
-                for ichan=1:64
-                    [~,pvals(ichan,itime),~, stat]= ttest(timeTOPO(:,ichan), 0, 'tail', 'both');
-                    tvals(ichan,itime)=stat.tstat;
+                %adjust topo values by mean subtraction per eeg channel?
+                if normEEGcorr==1;
+                    dPLOTtmp=zeros(size(dPLOT));
+                    
+                    for ippant=1:size(dPLOT,1)
+                        for ichan = 1:size(dPLOT,2)
+                            prevsnr=squeeze(dPLOT(ippant,ichan,:));
+                            thism=squeeze(mean(dPLOT(ippant,ichan,:)));
+                            tmpsub= repmat(thism, [1, size(prevsnr,2)]);
+                            dPLOTtmp(ippant,ichan,:) = prevsnr-tmpsub;
+                        end
+                        
+                    end
+                    dPLOT=dPLOTtmp;
+                    
+                    
                     
                 end
-                q=fdr(pvals(:),.05);
-                pmask = (pvals(:,itime)<q);
                 
+              % plot now
+              subplot(2,2,isubplot)
+              tp= topoplot(squeeze(mean(dPLOT(:,:,timeIND),1)), elocs(1:64), 'conv', 'on');      
+              %else plot tscores
+              %        tp= topoplot(tvals, elocs(1:64), 'pmask', pmask, 'conv', 'on');
+              
+              set(findobj(gca,'type','patch'),'facecolor',get(gcf,'color'))
+              
+              %         topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'emarker2', {find(pmask), 'o', 'w', 2}); caxis([-1 1])
+              %         if itime==length(timeIND)
+              c= colorbar;
+              ylabel(c, [ num2str(hzused) ' Hz, log(SNR)']);
+              
+              if normEEGcorr==1
+                  caxis([-.15 .15]);
+              else
+                  
+                 
+                  caxis([0 ymax])
+
+              end
+              
+              
+              title({[ num2str(TIMING)   's']})
+              set(gca, 'fontsize', 25)
+              icount=icount+1;
+     end
                 
-                %         subplot(2,length(timeIND),ipl)
-                %         subplot(1,2,ipl)
-                %        tp= topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'pmask', pmask, 'conv', 'on');
-                tp= topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'conv', 'on');
+                %%
+                c=colormap('viridis');        %
+                %%
+%                 c(1,:)=[ 0 0 0];
+                colormap(c)
+                %         subplot(3,1,3)
+                %         colorbar; caxis([-1 1])
+                set(gcf, 'color', 'w')
                 
-                %else plot tscores
-                %        tp= topoplot(tvals, elocs(1:64), 'pmask', pmask, 'conv', 'on');
+                %%
+            
+%            suptitle(['Top row ' useD ' Disappearance, bottom row  ' useD ' reappearance'])
+%          
+         cd(basefol)
+         cd ../
+         cd(['Figures' filesep 'GFX spatial correlations'])
+    
                 
-                set(findobj(gca,'type','patch'),'facecolor',get(gcf,'color'))
-                
-                %         topoplot(squeeze(mean(dPLOT(:,:,tid),1)), elocs(1:64), 'emarker2', {find(pmask), 'o', 'w', 2}); caxis([-1 1])
-                %         if itime==length(timeIND)
-                c= colorbar;
-                ylabel(c, [ titlep ', log(SNR)']);
-                
-                if normEEGcorr==1
-                    caxis([-.15 .15]);
-                else
-                    caxis([0 1])
-                end
-                
-                
-                title({[ num2str(TIMING(itime)) 's']})
-                set(gca, 'fontsize', 25)
-                icount=icount+1;
-            end
-        end
-        %%
-        c=colormap('viridis');        %
-        %%
-        c(1,:)=[ 0 0 0];
-        colormap(c)
-        %         subplot(3,1,3)
-        %         colorbar; caxis([-1 1])
-        set(gcf, 'color', 'w')
+                print('-dpng', ['SNR grouped Topo at -0.5s,' num2str(peakfreqsare(hzcompare(1))) 'and ' num2str(peakfreqsare(hzcompare(2))) ' during ' useD  '.png'])
+    
+    
     end
-    %%
-    cd('figures')
-    print('-dpng', 'Offset - spatial correlation')
+                %%
+               
+    end
+    
+                %%
+            
 end
+
+
+
 
 
 if job2.plotMeanTIMEtopo_andtvals==1
@@ -400,17 +599,43 @@ if  job2.plotSpatialCorrelation_overtime==1
     
      peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
 
+   
+for usePFIorCatch=2%1:2
     
-    
-    
+    if usePFIorCatch==1
+            useD='PFI';
+            falpha = .5;
+    else
+            useD='Catch';
+            falpha = .15;
+    end
+        
+   
     
     onsetChans_both= zeros(2, 16, 64, 14);
     offsetChans_both= zeros(2, 16, 64, 14);
-    hzcompare = [3, 4];
+    
+    
+    %cycle through them all.
+    hzcompareAll = [1, 2; 1,3;1,4;1,7;...
+                 2, 3; 2,4;2,7;...
+                 3,4;3,7;4,7];
+    
+             
+    for allhzcombos = 1:size(hzcompareAll,1)
     hzcounter=1;
+    hzcompare= hzcompareAll(allhzcombos,:);
+    
+    
+    cd(basefol)
+    cd('GFX_Pre-RESS')
+    figure(1)
+    clf
+    
+    
     for ihz = hzcompare
         usehz= peakfreqsare(ihz);
-        load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_allchan'])
+        load(['GFX_' useD 'performance_withSNR_' num2str(usehz) '_allchan'])
         onsetChans_both(hzcounter,:,:,:) = storeacrossPpant_onsetSNR_chans;
         offsetChans_both(hzcounter,:,:,:) = storeacrossPpant_offsetSNR_chans;        
         hzcounter=hzcounter+1;
@@ -436,13 +661,13 @@ if  job2.plotSpatialCorrelation_overtime==1
                 chis= 'target invisible';
                 %calculate spatial correlation over time:
                 colis='r';
-                linestyle='-';
+                linestyle='--';
             case 2
                 d1=offsetChans_20;
                 d2=offsetChans_40;
                 chis= 'target visible';
                 %                            colis='k';
-                linestyle=':';
+                linestyle='-';
         end
         
         
@@ -541,6 +766,7 @@ if  job2.plotSpatialCorrelation_overtime==1
             st.mainLine.LineStyle=linestyle;
             st.mainLine.LineWidth=3;
             st.patch.FaceColor=colis;
+            st.patch.FaceAlpha = falpha;
             st.edge(1).Color=colis;
             st.edge(2).Color=colis;
             
@@ -609,10 +835,10 @@ if  job2.plotSpatialCorrelation_overtime==1
         xlim([-2.5 2.5])
         
         
-        ylabel([num2str(peakfreqsare(hzcompare(1))) ' vs ' num2str(peakfreqsare(hzcompare(2))) ' spatial correlation [\it r\rm ]'])
+        ylabel({[num2str(peakfreqsare(hzcompare(1))) ' vs ' num2str(peakfreqsare(hzcompare(2))) ' Hz '];['spatial correlation [\it r\rm ]']})
 %         ylabel({['1f vs. 2f correlation [\itr\rm ]']})
         xlabel(['Time from ' chis ])
-        xlabel(['Time from subjective report'])
+        xlabel(['Time from catch report'])
         set(gca, 'fontsize', 25)
         set(gcf, 'color', 'w')
         
@@ -645,7 +871,12 @@ if  job2.plotSpatialCorrelation_overtime==1
     %                legend([leg(1) leg(2)], {'target invisible' 'target visible'})
     %
     axis tight
-                   ylim([.2 .8])
+    if usePFIorCatch==1
+                   ylim([.25 .7])
+    else
+                   ylim([-.05 .7])
+    end
+        
                    xlim([-1.75 1.75])
     %
     cd(basefol)
@@ -654,7 +885,11 @@ if  job2.plotSpatialCorrelation_overtime==1
     %
     cd('GFX spatial correlations')
     %
-    print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2)))])
+%     title(['During ' useD ])
+    print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2))) ' ' useD])
+    
+    end % Hz combos.
+end % PFI or Catch?
 end
 %%
 

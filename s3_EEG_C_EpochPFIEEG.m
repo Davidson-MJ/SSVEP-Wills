@@ -838,7 +838,7 @@ if job.ppantPFI_topotime==1
             icounter=1;            
             cd(basefol)
             cd('EEG')
-            cd(pdirs(ifol).name)
+            cd(dirs(ifol).name)
             
             
             load(['ppant_PFI_Epoched'])

@@ -19,11 +19,11 @@ job.EpochperppantCATCH=0; %Epoch each participants Catch windows
 %also stores the BP trace for next job.
 
 
-job.erpimageCATCHusingSNR=0; % saves at ppant level. % done. for 1f TG and BG
-
+job.erpimageCATCHusingSNR=1; % saves at ppant level. % done. for 1f TG and BG
+job.ppantCATCH_topotime=1;
 
 job.concaterpdataacrossppants=0;
-job.concater_invis_pdataacrossppants=1;
+job.concater_invis_pdataacrossppants=0;
 
 job.erpimageacrossppants=1;
 job.BPandSSVEPtimecourseacrossppants=0;
@@ -35,6 +35,13 @@ job.BPandSSVEPtimecourseacrossppants=0;
 
 ntrials=48;
 
+param_spcgrm.tapers = [1 1];
+param_spcgrm.Fs= [250];
+param_spcgrm.Fpass= [0 50];
+param_spcgrm.trialave=0;
+param_spcgrm.pad = 2;
+% movingwin=[2,.15]; % increase to 2.5?
+movingwin=[2.5,.25]; % 
 
 %% based on/replaces Mkat_MT_taper from Irene.
 cd(basefol)
@@ -481,16 +488,16 @@ if job.erpimageCATCHusingSNR==1
     tt = 0:1/srate:60;
     
     %%
-    param_spctrm.tapers = [1 1];
-    param_spctrm.Fs= [250];
-    param_spctrm.Fpass= [0 50];
-    param_spctrm.trialave=0;
-    
-    param_spcgrm.tapers = [1 1];
-    param_spcgrm.Fs= [250];
-    param_spcgrm.Fpass= [0 50];
-    param_spcgrm.trialave=0;
-    movingwin=[1,.15];
+%     param_spctrm.tapers = [1 1];
+%     param_spctrm.Fs= [250];
+%     param_spctrm.Fpass= [0 50];
+%     param_spctrm.trialave=0;
+%     
+%     param_spcgrm.tapers = [1 1];
+%     param_spcgrm.Fs= [250];
+%     param_spcgrm.Fpass= [0 50];
+%     param_spcgrm.trialave=0;
+%     movingwin=[1,.15];
     
     rmvbase=0;
     
@@ -498,7 +505,7 @@ if job.erpimageCATCHusingSNR==1
     for ifol = allppants
         
         
-        for hzis=1:2
+        for hzis=3:4
             switch hzis
                 case 1
                     usehz=15;
@@ -508,6 +515,8 @@ if job.erpimageCATCHusingSNR==1
                     usehz=30;
                 case 4
                     usehz=40;
+                case 5
+                        usehz=5;
             end
             
         
@@ -559,7 +568,7 @@ if job.erpimageCATCHusingSNR==1
                         
                         case 3 
                             % only perform once.
-                           if ialignment==2
+                           if alignment==2
                                break
                            else
                                
@@ -704,30 +713,100 @@ if job.erpimageCATCHusingSNR==1
                     datais=bsdata;
                     %%
                     [sgrm ,tgrm, fgrm] = mtspecgramc(datais', movingwin, param_spcgrm);
-                    %%
                     %conv SNR
-                    snr_sgrm =zeros(size(sgrm));
-                    
-                    
-                    kernelw= [ -1/8 -1/8 -1/8 -1/8 0 0 1 0 0 -1/8 -1/8 -1/8 -1/8];
-                    
-                    for itrial=1:size(sgrm,3)
-                        %compute SNR
-                        tmps= squeeze(sgrm(:,:,itrial));
-                        
-                        for itime= 1:size(tmps,1)
-                            checkput = conv(log(tmps(itime,:)), kernelw,'same');
-                            if ~isreal(checkput)
-                                snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
+                snr_sgrm =zeros(size(sgrm));
+                
+                 tmps=sgrm;
+                            %adjust for HBW 
+                                k = ((param_spcgrm.tapers(1,1)));%
+                                hbw = (k+1)./ (2.*[movingwin(1,1)]);
+                                neighb = 2; %hz
+                                
+                                %space out kernel appropriately
+                                distz = dsearchn(fgrm', [hbw, neighb, neighb*2+hbw]');
+                                
+                                % we don't want odd numbers, messes with
+                                % calculations, so round allup to even.
+                                ods = find(mod(distz,2)~=0);
+                                %adjust.
+                                distz(ods)= distz(ods)+1;
+                                
+                                %make kernel
+                                kernelneighb = -1*(repmat(1/(distz(2)*2), [1, distz(2)]));
+                                kernelskip = zeros(1,distz(1));
+                                
+                                kernelw= [kernelneighb, kernelskip, 1, kernelskip, kernelneighb];
+                                if sum(kernelw)~=0
+                                    error('')
+                                end
+                            if snrmethod==1%method 1, using division.
+                                
+                               
+                                
+                                
+                                
+                                % loop over frequencies and compute SNR
+                                numbins = distz(2);
+                                skipbins = distz(1);
+                                snr_sgrm= zeros(size(sgrm));
+                                for itrial = 1:size(sgrm,3)
+                                for itime=1:size(tmps,1)
+                                    for hzi=numbins+1:length(fgrm)-numbins-1
+                                        numer = tmps(itime,hzi, itrial);
+                                        denom = nanmean( tmps(itime,[hzi-numbins:hzi-skipbins hzi+skipbins:hzi+numbins]) );
+                                        snr_sgrm(itime,hzi,itrial) = numer./denom;
+                                        
+                                    end
+                                end
+                                end
+                                
                             else
-                                snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
+                                %                             %conv SNR
+                                %                             snr_sgrm =zeros(size(sgrm));
+                                %
+                                
+                                %%
+%                                 kernelw= [-1/8 -1/8 -1/8 -1/8 0 0 1 0 0 -1/8 -1/8 -1/8 -1/8];
+                                
+                                %snr on trials or
+                                for itrial=1:size(sgrm,3)
+                                    %compute SNR
+                                    tmps= squeeze(sgrm(:,:,itrial));
+                                    
+                                    for itime= 1:size(tmps,1)
+                                        checkput = conv(log(tmps(itime,:)), kernelw,'same');
+                                        if ~isreal(checkput)
+                                            snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
+                                        else
+                                            snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
+                                        end
+                                    end
+                                end
+                            
+                             %% sanity check:
+%                               figure(1);
+%                               %plot specgrm and spctrm.
+%                               subplot(221)
+%                             imagesc(tgrm, fgrm, squeeze(mean(log(sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(223)
+%                             mtrials=squeeze(mean(log(sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             %plot specgrm and spctrm.
+%                               subplot(222)
+%                             imagesc(tgrm, fgrm, squeeze(mean((snr_sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(224)
+%                             mtrials=squeeze(mean((snr_sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             hold on; 
+%                                % center kernel at 20 Hz
+%     hlfkern= (length(kernelw)-1)/2;
+%     [~,hzid]= min(abs(fgrm-20)); 
+%     fvector = (hzid- hlfkern):(hzid+hlfkern);
+%     plot(fgrm(fvector), kernelw*2, 'r')
                             end
-                        end
-                    end
-                    
-                    %store just stim freq.
-                    [~, hzid]= min(abs(fgrm-usehz));
                     %%
+                    %store just stim freq.
+                        [~, hzid]= min(abs(fgrm-usehz));
                     %reduce size.
                     snrgrm20=squeeze(snr_sgrm(:,hzid,:))';
                     %
@@ -839,16 +918,7 @@ if job.erpimageCATCHusingSNR==1
                 end
                 
                 
-                switch hzis
-                    case 1
-                        savename='Catchperformance_withSNR_15';
-                    case 2
-                        savename='Catchperformance_withSNR_20';
-                        case 3
-                        savename='Catchperformance_withSNR_30';
-                        case 4
-                        savename='Catchperformance_withSNR_40';
-                end
+                        savename=['Catchperformance_withSNR_' num2str(usehz)];
                 
                 if alignment==2
                     savename = [savename ',BPaligned'];
@@ -1264,6 +1334,298 @@ if job.concater_invis_pdataacrossppants==1
     
 end
 
+
+if job.ppantCATCH_topotime==1
+ getelocs
+    window=[-3 3];
+    snrmethod=2;
+    srate=250;
+    rmvbase=0;
+    epochdur = sum(abs(window))*srate;
+    
+    timeid = [0:1/srate:epochdur];
+    timeid= timeid-3;
+    
+    onsetc = ceil(epochdur)/2;
+    % peakfreqsare=[20,40]; %hz
+    %timing
+    tt = 0:1/srate:60;
+    
+    %%
+    param_spctrm.tapers = [1 1];
+    param_spctrm.Fs= [250];
+    param_spctrm.Fpass= [0 50];
+    param_spctrm.trialave=0;
+     peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
+
+    %%
+    for ifol = allppants
+        
+        for hzis=[1,2,3,4,7];
+            usehz = peakfreqsare(hzis);
+            
+            
+            
+            icounter=1;            
+            cd(basefol)
+            cd('EEG')
+            cd(pdirs(ifol).name)
+            
+            
+            load(['ppant_Catch_Epoched'])
+            
+            for itimezero = 1:2
+                if itimezero==1
+                    
+                    %append them all. TARG-> Disappearing (more buttons
+                    %pressed).
+                    datatouse = ppant_SNREEG_disapBPwithincatch;
+                   
+                    ctype = 'report catch onset';
+%                     bsrem = [-3 -1]; %seconds
+                    
+                else
+                    datatouse = ppant_SNREEG_reapBPaftercatch;
+%                     datatouse = cat(1, ppant_SNREEG_PFI_1_0,ppant_SNREEG_PFI_2_1,ppant_SNREEG_PFI_3_2,ppant_SNREEG_PFI_4_3);
+%                     RTstouse = [durs1_0'; durs2_1'; durs3_2'];
+%                     BPstouse = cat(1, BPs1_0, BPs2_1, BPs3_2);
+                    ctype = 'report catch offset';
+                    
+                    
+                    bsrem = [1 3]; %seconds
+                    
+                    
+                end
+                
+                %             %rmvbaseline from EEG.
+                datais=datatouse;
+                
+                
+                % remove any NANs
+                chNan = squeeze(mean(datais,2));
+                chNan = squeeze(mean(chNan,2));
+                nanid=find(isnan(chNan));
+                
+                keeptrials= setdiff(1:48, nanid);
+                
+                datais = datais(keeptrials,:,:);
+                
+                bsdata = zeros(size(datais));
+                
+                for ichan=1:64
+                for itrial = 1:size(datais,1)
+                    td = detrend(squeeze(datais(itrial,ichan,:)), 'linear');
+%                     tdrm= mean(td(1,1:250));
+%                     rmb= repmat(tdrm, [1 length(td)]);
+                    bsdata(itrial,ichan,:) = td;%-rmb;
+                end
+                end
+                datais=bsdata;
+                %%
+                snr_grmout=zeros(64,14); % chans by time points.
+%                 snr_grmout=zeros(64,size(datais,1),14);
+                for ichan=1:64
+                    datacr=squeeze(datais(:,ichan,:));
+                    
+                [sgrm ,tgrm, fgrm] = mtspecgramc(datacr', movingwin, param_spcgrm);
+                %%
+                %conv SNR
+                 tmps=sgrm;
+                            %adjust for HBW 
+                                k = ((param_spcgrm.tapers(1,1)));%
+                                hbw = (k+1)./ (2.*[movingwin(1,1)]);
+                                neighb = 2; %hz
+                                
+                                %space out kernel appropriately
+                                distz = dsearchn(fgrm', [hbw, neighb, neighb*2+hbw]');
+                                
+                                % we don't want odd numbers, messes with
+                                % calculations, so round allup to even.
+                                ods = find(mod(distz,2)~=0);
+                                %adjust.
+                                distz(ods)= distz(ods)+1;
+                                
+                                %make kernel
+                                kernelneighb = -1*(repmat(1/(distz(2)*2), [1, distz(2)]));
+                                kernelskip = zeros(1,distz(1));
+                                
+                                kernelw= [kernelneighb, kernelskip, 1, kernelskip, kernelneighb];
+                                if sum(kernelw)~=0
+                                    error('')
+                                end
+                                 snr_sgrm= zeros(size(sgrm));
+                            if snrmethod==1%method 1, using division.
+                                
+                               
+                                
+                                
+                                
+                                % loop over frequencies and compute SNR
+                                numbins = distz(2);
+                                skipbins = distz(1);
+                                snr_sgrm= zeros(size(sgrm));
+                                for itrial = 1:size(sgrm,3)
+                                for itime=1:size(tmps,1)
+                                    for hzi=numbins+1:length(fgrm)-numbins-1
+                                        numer = tmps(itime,hzi, itrial);
+                                        denom = nanmean( tmps(itime,[hzi-numbins:hzi-skipbins hzi+skipbins:hzi+numbins]) );
+                                        snr_sgrm(itime,hzi,itrial) = numer./denom;
+                                        
+                                    end
+                                end
+                                end
+                                
+                            else
+                                %                             %conv SNR
+                                %                             snr_sgrm =zeros(size(sgrm));
+                                %
+                                
+                                %%
+%                                 kernelw= [-1/8 -1/8 -1/8 -1/8 0 0 1 0 0 -1/8 -1/8 -1/8 -1/8];
+                                
+                                %snr on trials or
+                                for itrial=1:size(sgrm,3)
+                                    %compute SNR
+                                    tmps= squeeze(sgrm(:,:,itrial));
+                                    
+                                    for itime= 1:size(tmps,1)
+                                        checkput = conv(log(tmps(itime,:)), kernelw,'same');
+                                        if ~isreal(checkput)
+                                            snr_sgrm(itime,:,itrial)= nan(1, size(tmps,2));
+                                        else
+                                            snr_sgrm(itime,:,itrial)= conv(log(tmps(itime,:)), kernelw,'same');
+                                        end
+                                    end
+                                end
+                            
+                             %% sanity check:
+%                               figure(1);
+%                               %plot specgrm and spctrm.
+%                               subplot(221)
+%                             imagesc(tgrm, fgrm, squeeze(mean(log(sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(223)
+%                             mtrials=squeeze(mean(log(sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             %plot specgrm and spctrm.
+%                               subplot(222)
+%                             imagesc(tgrm, fgrm, squeeze(mean((snr_sgrm),3))'); colorbar; caxis([0 2])
+%                             subplot(224)
+%                             mtrials=squeeze(mean((snr_sgrm),3));
+%                             plot(fgrm, squeeze(mean(mtrials,1)));
+%                             hold on; 
+%                                % center kernel at 20 Hz
+%     hlfkern= (length(kernelw)-1)/2;
+%     [~,hzid]= min(abs(fgrm-20)); 
+%     fvector = (hzid- hlfkern):(hzid+hlfkern);
+%     plot(fgrm(fvector), kernelw*2, 'r')
+                            end
+                
+                %store just stim freq.
+                [~, hzid]= min(abs(fgrm-usehz));
+                %%
+                %reduce size.
+                snrgrm20=squeeze(snr_sgrm(:,hzid,:));
+                tbase= tgrm-3;
+                %%
+                if rmvbase==1
+                    %rmv baseline ?
+                    acrSNRsort_rmv=zeros(size(snrgrm20));
+                    for itrial=1:size(snrgrm20,2);
+                        
+                        tmp=snrgrm20(:,itrial)';
+                        %which baseline?
+                        tidx= dsearchn(tbase', [bsrem]');
+                        
+                        %rmvbase
+                        bs= mean(tmp(1,tidx(1):tidx(2)));
+                        bs=repmat(bs, 1, length(tmp));
+                        acrSNRsort_rmv(:,itrial)= tmp-bs;
+                        %                         acrSNRsort_rmv(itrial,:)= tmp./bs;
+                        
+                    end
+                    snrgrm20=acrSNRsort_rmv;
+                end
+                
+                snr_grmout(ichan,:)=squeeze(nanmean(snrgrm20,2));
+%                 snr_grmout(ichan,:,:)=snrgrm20';
+                end
+                %%
+                
+                switch itimezero
+                    case 1 %store for across ppant plots:
+                        
+                        Ppant_catchBPonsetSNR_allchan=snr_grmout; 
+                        
+                    case 2
+                        
+                        
+                        Ppant_catchBPoffsetSNR_allchan=snr_grmout; 
+                        
+                end
+            end
+            
+            
+            %%
+            
+                    savename=['Catchperformance_withSNR_' num2str(usehz)];
+            
+            
+            
+            save(savename,...
+                'Ppant_catchBPoffsetSNR_allchan','Ppant_catchBPonsetSNR_allchan','-append');
+                
+            disp([ 'fin all chan append for ' num2str(ifol)])
+        end
+    end
+end
+
+
+if job.concatTOPOTIMEacrossppants==1
+    %%
+    for ihz=[1:4,7]
+        
+        usehz=peakfreqsare(ihz);
+        loadname=['Catchperformance_withSNR_' num2str(usehz)];
+
+        storeacrossPpant_onsetSNR_chans=zeros(length(allppants),64,14);
+        storeacrossPpant_offsetSNR_chans=zeros(length(allppants),64,14);
+        
+        icounter=1;
+        
+        for ippant = allppants
+            cd(basefol)
+            cd('EEG')
+            cd(pdirs(ippant).name);
+            %onset types
+            
+            load(loadname)
+%             storeacrossPpant_onsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_onsetSNR_allchan,2));
+%             storeacrossPpant_offsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_offsetSNR_allchan,2));
+            storeacrossPpant_onsetSNR_chans(icounter,:,:)=Ppant_catchBPonsetSNR_allchan;
+            storeacrossPpant_offsetSNR_chans(icounter,:,:)=Ppant_catchBPoffsetSNR_allchan;
+            
+            icounter=icounter+1;
+        end
+        %%
+        cd(basefol)
+        cd('EEG')
+        cd('GFX_Pre-RESS')
+        %%
+        
+        savename=['GFX_Catchperformance_withSNR_' num2str(usehz) '_allchan'];
+        
+        save(savename, 'storeacrossPpant_onsetSNR_chans',...
+            'storeacrossPpant_offsetSNR_chans', 'tgrm');
+        
+    end
+    
+end
+% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %   TOPO time plotted in a sep script for Will's data).
+% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %
+% %%%%% %%% %% % % %
 
 %%
 if job.erpimageacrossppants==1

@@ -53,7 +53,7 @@ job.exportDatatoExcelfolonDesktop_jamovi =0; %can save as matlab or on desktop.
 
 %perform LME in matlab
 job.LMEonHzxLOC=0;
-job.LMEnPFIwShuff=0;
+job.LMEnPFIwShuff=1;
 
 %%%%%% plotting
 
@@ -62,7 +62,7 @@ job.LMEnPFIwShuff=0;
 job.plotBehaviouraldata=0;
 
 % plot these together:
-job.plotBehaviouraldata_num_with_shuffled=1;
+job.plotBehaviouraldata_num_with_shuffled=0;
 
 job.compareSlopesofShuffledvsObserveddata=0;
 
@@ -2222,7 +2222,7 @@ if job.exportDatatoExcelfolonDesktop_jamovi ==1
     load('MD_AllBP_perppant.mat')
     
     
-    outputtoDESKTOPorSAVEinmatlab=1;
+    outputtoDESKTOPorSAVEinmatlab=2;
     
     ppantID=[1:length(allppants)];
     
@@ -2271,7 +2271,7 @@ if job.exportDatatoExcelfolonDesktop_jamovi ==1
             
             
             %create indexes for table entry
-            if itype==3
+            if itype==3 % =nPFI
                 nreps = size(mtmp,2);
                 pIDs = repmat(ppantID', [nreps, 1]);
 
@@ -2280,7 +2280,7 @@ if job.exportDatatoExcelfolonDesktop_jamovi ==1
                     
                     if mod(indvar,2)==0
                         
-                        realrows = ppantID+ ((ilevel-1)*length(allppants))+88;
+                        realrows = ppantID+ ((ilevel-1)*length(allppants))+length(allppants)*nreps;
                     else
                         realrows = ppantID+ ((ilevel-1)*length(allppants));
                     end
@@ -2506,88 +2506,241 @@ end
     
     
     if job.LMEnPFIwShuff==1
+        
+        
         cd(basedir)
         
-        
+        addpath('/Users/MattDavidson/Documents/MATLAB/Toolbox/LME resources')
         load('BEHAVIOURAL_PFI_forLME.mat');
         %%
         tresults=table();
+        % note to drop the '0' targets PFI, restrict to these rows:
+        nPFIonly=1;
+        nreps = 5; 
+        nppants = length(allppants);
+        pfirows= [nppants+1:nppants*nreps; (nppants+1:nppants*nreps)+nppants*nreps];
         
         icount=1;
-        for id=1:3
-            switch id
-                case 1
-                    datatable=FreqPFI_nPFIwShuff_tbl;
-                    DVtype='FreqPFI';
-                case 2
-                    datatable=mDurPFI_nPFIwShuff_tbl;
-                    DVtype='mDurPFI';
-                case 3
-                    datatable=tDurPFI_nPFIwShuff_tbl;
-                    DVtype='toralDurPFI';
+        for idatatype=1:2
+            if idatatype==1
+                if nPFIonly==1
+                    useindx = pfirows(1,:); % real data excluding 0 target cases.
+                else
+                    useindx=1:(nreps*nppants); %real data in table.
+                end
+                datatypewas='Observed';
+            else
+                if nPFIonly==1
+                    useindx= pfirows(2,:); % shuffled data but excluding 0 target cases
+                else
+                    useindx=(nreps*nppants + 1):2*nreps*nppants; % all shuffled data in table.
+                end
+                datatypewas='Shuffled';
             end
             
-            
-            
-            
-            for idrop = 1:3 % compare interaction, hz and loc.
-                switch idrop
-                    case 1 %test interaction.
-                        UNterm1='DV ~ realvsshuff*nPFI + (1|subjectID)';
-                        UNterm2='DV ~ realvsshuff*nPFI -realvsshuff:nPFI+ (1|subjectID)';
-                        dropis= 'FE Int';
-                    case 2 %test nPFI
-                        UNterm1='DV ~   realvsshuff*nPFI +  (1|subjectID)';
-                        UNterm2='DV ~  realvsshuff*nPFI - nPFI + (1|subjectID)';
-                        dropis= 'FE nPFI';
-                    case 3 %test real vs shuff
-                        UNterm1='DV ~   realvsshuff*nPFI + (1|subjectID)';
-                        UNterm2='DV ~  realvsshuff*nPFI - realvsshuff +(1|subjectID)';
-                        dropis= 'FE realvsshuff';
+            for id=1:3
+                switch id
+                    case 1
+                        datatable=FreqPFI_nPFIwShuff_tbl(useindx,:);
+                        DVtype='PFI per trial';
+                    case 2
+                        datatable=mDurPFI_nPFIwShuff_tbl(useindx,:);
+                        DVtype='PFI duration';
+                    case 3
+                        datatable=tDurPFI_nPFIwShuff_tbl(useindx,:);
+                        DVtype='Total duration';
                 end
                 
-                %%
-                %make sure to change the correct cols to nominal.
-                datatable.subjectID = nominal(datatable.subjectID);
-                datatable.realvsshuff =categorical(datatable.realvsshuff);
-                datatable.nPFI =ordinal(datatable.nPFI);
-                
-            
-                %creating models:
-                lmeUN =fitlme(datatable, UNterm1);%, 'fitMethod', 'REML');
-                lmeRe =fitlme(datatable, UNterm2);%,'fitMethod', 'REML';
-                
-                tmp=compare(lmeRe, lmeUN);
-                    [h,pValue,stat] =LogLikelihoodReport(lmeUN,lmeRe);
-                
-                %%
-                %store chi-sq;
-                tresults(icount,1) = table({DVtype});
-                tresults(icount,2) = table({dropis});
-                tresults(icount,3) = table(tmp.LRStat(2));
-                tresults(icount,4) = table(tmp.deltaDF(2));
-                tresults(icount,5) = table(tmp.pValue(2));
-                
-                
-                icount=icount+1;
-                
-                
-                %alternate ways of calculating:
-                %     [h,pValue,stat] =lratiotest(lmeUN.LogLikelihood,lmeUN2.LogLikelihood,abs(lmeUN.DFE-lmeUN2.DFE))
                 
                 
                 
+                for idrop = 4%1:4 % compare interaction, hz and loc.
+                    switch idrop
+                        case 1 %test interaction.
+                            UNterm1='DV ~ realvsshuff*nPFI + (1|subjectID)';
+                            UNterm2='DV ~ realvsshuff*nPFI -realvsshuff:nPFI+ (1|subjectID)';
+                            dropis= 'FE Int';
+                        case 2 %test nPFI
+                            UNterm1='DV ~   realvsshuff*nPFI +  (1|subjectID)';
+                            UNterm2='DV ~  realvsshuff*nPFI - nPFI + (1|subjectID)';
+                            dropis= 'FE nPFI';
+                        case 3 %test real vs shuff
+                            UNterm1='DV ~   realvsshuff*nPFI + (1|subjectID)';
+                            UNterm2='DV ~  realvsshuff*nPFI - realvsshuff +(1|subjectID)';
+                            dropis= 'FE realvsshuff';
+                        case 4 %test intercepts
+                            UNterm1='DV ~   nPFI + (1|subjectID)';
+                            UNterm2='DV ~  1+(1|subjectID)';
+                            dropis= 'FE nPFI.';
+                            
+                    end
+                    
+                    %%
+                    %make sure to change the correct cols to nominal.
+                    datatable.subjectID = nominal(datatable.subjectID);
+                    datatable.realvsshuff =categorical(datatable.realvsshuff);
+                    datatable.nPFI =ordinal(datatable.nPFI);
+                    
+                    
+                    %creating models:
+                    lmeUN =fitlme(datatable, UNterm1);%, 'fitMethod', 'REML');
+                    lmeRe =fitlme(datatable, UNterm2);%,'fitMethod', 'REML';
+                    
+                    tmp=compare(lmeRe, lmeUN);
+                    
+                    %                     [h,pValue,stat] =LogLikelihoodReport(lmeUN,lmeRe);
+                    
+                    %%
+                    %store chi-sq;
+                    
+                    tresults(icount,1) = table({DVtype});
+                    tresults(icount,2) = table({dropis});
+                    tresults(icount,3) = table(tmp.LRStat(2));
+                    tresults(icount,4) = table(tmp.deltaDF(2));
+                    tresults(icount,5) = table(tmp.pValue(2));
+                    tresults(icount,6) = table({datatypewas});
+                    
+                    icount=icount+1;
+                    
+                    
+                    %alternate ways of calculating:
+                    %     [h,pValue,stat] =lratiotest(lmeUN.LogLikelihood,lmeUN2.LogLikelihood,abs(lmeUN.DFE-lmeUN2.DFE))
+                    
+                    
+                    
+                end
             end
+            
+            
         end
         tresults.Properties.VariableNames(1)= {'DV'};
-        tresults.Properties.VariableNames(2)= {'FixedEffect'};
+        tresults.Properties.VariableNames(2)= {'Factor'};
         tresults.Properties.VariableNames(3)= {'teststat'};
         tresults.Properties.VariableNames(4)= {'DoF'};
         tresults.Properties.VariableNames(5)= {'pval'};
+        tresults.Properties.VariableNames(6)= {'Modeled'};
         %display results
         disp(tresults)
         Finalresults_nPFIxrealvsshuff=tresults;
         %%
-         save('BEHAVIOURAL_PFI_forLME.mat', 'Finalresults_HzxLoc', '-append')
-        
+        save('BEHAVIOURAL_PFI_forLME.mat', 'Finalresults_HzxLoc', '-append')
     end
+    
+%          
+%          
+%          cd(basedir)
+%         
+%         addpath('/Users/MattDavidson/Documents/MATLAB/Toolbox/LME resources')
+%         load('BEHAVIOURAL_PFI_forLME.mat');
+%         %%
+%         tresults=table();
+%         % note to drop the '0' targets PFI, restrict to these rows:
+%         nPFIonly=1;
+%         pfirows= [23:88, 111:176];
+%         
+%         icount=1;
+%         for idatatype=1:2
+%             if idatatype==1
+%                 if nPFIonly==1
+%                     useindx = 23:88;
+%                 else
+%                 useindx=1:88; %real data in table.
+%                 end
+%                 datatypewas='Observed';
+%             else
+%                 if nPFIonly==1
+%                     useindx= 111:176;
+%                 else
+%                 useindx=89:176; %shuffled data in table.
+%                 end
+%                 datatypewas='Shuffled';
+%             end
+%             
+%         for id=1:3
+%             switch id
+%                 case 1
+%                     datatable=FreqPFI_nPFIwShuff_tbl(useindx,:);
+%                     DVtype='PFI per trial';
+%                 case 2
+%                     datatable=mDurPFI_nPFIwShuff_tbl(useindx,:);
+%                     DVtype='PFI duration';
+%                 case 3
+%                     datatable=tDurPFI_nPFIwShuff_tbl(useindx,:);
+%                     DVtype='Total duration';
+%             end
+%             
+%             
+%             
+%             
+%             for idrop = 4%1:4 % compare interaction, hz and loc.
+%                 switch idrop
+%                     case 1 %test interaction.
+%                         UNterm1='DV ~ realvsshuff*nPFI + (1|subjectID)';
+%                         UNterm2='DV ~ realvsshuff*nPFI -realvsshuff:nPFI+ (1|subjectID)';
+%                         dropis= 'FE Int';
+%                     case 2 %test nPFI
+%                         UNterm1='DV ~   realvsshuff*nPFI +  (1|subjectID)';
+%                         UNterm2='DV ~  realvsshuff*nPFI - nPFI + (1|subjectID)';
+%                         dropis= 'FE nPFI';
+%                     case 3 %test real vs shuff
+%                         UNterm1='DV ~   realvsshuff*nPFI + (1|subjectID)';
+%                         UNterm2='DV ~  realvsshuff*nPFI - realvsshuff +(1|subjectID)';
+%                         dropis= 'FE realvsshuff';
+%                     case 4 %test intercepts
+%                         UNterm1='DV ~   nPFI + (1|subjectID)';
+%                         UNterm2='DV ~  1+(1|subjectID)';
+%                         dropis= 'FE nPFI.';
+%                         
+%                 end
+%                 
+%                 %%
+%                 %make sure to change the correct cols to nominal.
+%                 datatable.subjectID = nominal(datatable.subjectID);
+%                 datatable.realvsshuff =categorical(datatable.realvsshuff);
+%                 datatable.nPFI =ordinal(datatable.nPFI);
+%                 
+%             
+%                 %creating models:
+%                 lmeUN =fitlme(datatable, UNterm1);%, 'fitMethod', 'REML');
+%                 lmeRe =fitlme(datatable, UNterm2);%,'fitMethod', 'REML';
+%                 
+%                 tmp=compare(lmeRe, lmeUN);
+%                 
+% %                     [h,pValue,stat] =LogLikelihoodReport(lmeUN,lmeRe);
+%                 
+%                 %%
+%                 %store chi-sq;
+%                 
+%                 tresults(icount,1) = table({DVtype});
+%                 tresults(icount,2) = table({dropis});
+%                 tresults(icount,3) = table(tmp.LRStat(2));
+%                 tresults(icount,4) = table(tmp.deltaDF(2));
+%                 tresults(icount,5) = table(tmp.pValue(2));
+%                 tresults(icount,6) = table({datatypewas});
+%                 
+%                 icount=icount+1;
+%                 
+%                 
+%                 %alternate ways of calculating:
+%                 %     [h,pValue,stat] =lratiotest(lmeUN.LogLikelihood,lmeUN2.LogLikelihood,abs(lmeUN.DFE-lmeUN2.DFE))
+%                 
+%                 
+%                 
+%             end
+%         end
+%         
+%         
+%     end
+%         tresults.Properties.VariableNames(1)= {'DV'};
+%         tresults.Properties.VariableNames(2)= {'Factor'};
+%         tresults.Properties.VariableNames(3)= {'teststat'};
+%         tresults.Properties.VariableNames(4)= {'DoF'};
+%         tresults.Properties.VariableNames(5)= {'pval'};
+%         tresults.Properties.VariableNames(6)= {'Modeled'};
+%         %display results
+%         disp(tresults)
+%         Finalresults_nPFIxrealvsshuff=tresults;
+%         %%
+%          save('BEHAVIOURAL_PFI_forLME.mat', 'Finalresults_HzxLoc', '-append')
+         
+    

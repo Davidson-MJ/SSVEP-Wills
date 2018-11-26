@@ -28,9 +28,9 @@ return
 
 %test code
 
-display.dist = 60; %cm
-display.width = 44.5; %cm
-display.resolution = [1680,1050];
+% display.dist = 60; %cm
+% display.width = 44.5; %cm
+% display.resolution = [1680,1050];
 
 pix = 100;
 

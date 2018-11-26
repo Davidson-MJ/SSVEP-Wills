@@ -18,7 +18,7 @@ fontsize=15;
 job.reformatPPANTdata=0; % for later analysis, stores as struct with trial details.
 job.epocharoundCatchonset=0;
 
-%%%% THis step now retains 'invisible' catches. What happens when the
+%%%% THis step  (below) now retains 'invisible' catches. What happens when the
 %%%% target is removed while invisible?
 
 job.sortCatchtracesbynumTargets=0; %onset and offsets. appended to 'catch performance' % used in plotPpantProbandSig below.
@@ -29,8 +29,8 @@ job.calcNEWShuffledCatchOnsetBPProb=0; %!  ! ! ! new ver MD # 04/18.
 
 job.calcMissedcatchesbyTargperppant=0; % this appends to Catch Struct -> highlights those potentially missed catches in the all trials plots.
 
-job.plotCatchtracesbynumTargets_eachppant=1;  % also plots overall RTs to catch onset/offset.
-job.plotCatchtracesbynumTargets=0; % not really by num targets, plots vs shuffled.
+job.plotCatchtracesbynumTargets_eachppant=0;  % also plots overall RTs to catch onset/offset.
+job.plotCatchtracesbynumTargets=1; % not really by num targets, plots vs shuffled.
 
 
 
@@ -1191,7 +1191,9 @@ if job.plotCatchtracesbynumTargets==1
     %%% %%% for these plots, we can use CI or SEM for error bars
 %     useSEMorCI=2;
     
+    % can also plot INVIS
     
+    plotINVIScatchonset=1;
     
     %collect onset trace across ppants for each type
     %%
@@ -1208,9 +1210,13 @@ if job.plotCatchtracesbynumTargets==1
         anovadata = zeros(length(goodppants),4, length(xtOFFSET)); %for comparing each time point.
         
         if onsetoroffset==1
-            %             stack=mean_catchBP_Probtraceperppant_bynum;
-            %obs to plot
+            %observed data first.
+            if plotINVIScatchonset==0; 
+               % if not plotting the invisibe, plot the filtered (i.e. no buttons pressed).                
             stack = catchBP_ProbtraceperPpant_onetothreetargets_mean;            
+            else
+                stack = catchBP_ProbtraceperPpant_onetothreetargets_invis_mean;            
+            end
             %shuff to plot
             acrossall_mShuffledCatch= squeeze(acrossall_mShuffledCatch_MD_filtered(:,1,:,:)); %has an extra dimension for onsets/offsets.
             x = xtONSET;
