@@ -19,13 +19,13 @@ job.EpochperppantCATCH=0; %Epoch each participants Catch windows
 %also stores the BP trace for next job.
 
 
-job.erpimageCATCHusingSNR=1; % saves at ppant level. % done. for 1f TG and BG
-job.ppantCATCH_topotime=1;
+job.erpimageCATCHusingSNR=0; % saves at ppant level. % done. for 1f TG and BG
+job.ppantCATCH_topotime=0;
 
-job.concaterpdataacrossppants=0;
+job.concaterpdataacrossppants=1;
 job.concater_invis_pdataacrossppants=0;
 
-job.erpimageacrossppants=1;
+job.erpimageacrossppants=0;
 job.BPandSSVEPtimecourseacrossppants=0;
 
 
@@ -483,15 +483,15 @@ if job.erpimageCATCHusingSNR==1
     timeid= timeid-3;
     
     onsetc = ceil(epochdur)/2;
-    % peakfreqsare=[20,40]; %hz
+    
     %timing
     tt = 0:1/srate:60;
     
     %%
-%     param_spctrm.tapers = [1 1];
-%     param_spctrm.Fs= [250];
-%     param_spctrm.Fpass= [0 50];
-%     param_spctrm.trialave=0;
+    param_spctrm.tapers = [1 1];
+    param_spctrm.Fs= [250];
+    param_spctrm.Fpass= [0 50];
+    param_spctrm.trialave=0;
 %     
 %     param_spcgrm.tapers = [1 1];
 %     param_spcgrm.Fs= [250];
@@ -500,25 +500,13 @@ if job.erpimageCATCHusingSNR==1
 %     movingwin=[1,.15];
     
     rmvbase=0;
-    
-    %%
+    snrmethod=2; % 1 = division (slow), 2=dot point kernel.
+    %
     for ifol = allppants
         
         
-        for hzis=3:4
-            switch hzis
-                case 1
-                    usehz=15;
-                case 2
-                    usehz=20;
-                case 3
-                    usehz=30;
-                case 4
-                    usehz=40;
-                case 5
-                        usehz=5;
-            end
-            
+        for hzis=5:6
+            usehz=peakfreqsare(hzis);
         
             for alignment=1:2
                 
@@ -615,7 +603,7 @@ if job.erpimageCATCHusingSNR==1
                     usechan=62; %POz for all
                     
                     
-                    %%
+                    %
                     figure(1)
                     clf
                     subplot(4,2,1:2)
@@ -625,7 +613,7 @@ if job.erpimageCATCHusingSNR==1
                     ylabel(c, 'SNR')
                     title({[num2str(usehz) 'Hz SNR '];['-3000:-100ms']})
                     
-                    %
+                    
                     
                     %plot BP for comparison
                     subplot(4,2, [3 5])
@@ -951,18 +939,9 @@ if job.concaterpdataacrossppants==1
     
     ppantsmoothing=1; % average across participants, after smoothing, or no.
     
-    for ihz=1:2
-        
-        switch ihz
-            case 1
-            loadname='Catchperformance_withSNR_15';
-            case 2
-            loadname='Catchperformance_withSNR_20';
-            case 3
-                loadname='Catchperformance_withSNR_30';
-            case 4
-                loadname='Catchperformance_withSNR_40';                
-        end
+    for ihz=1:7
+        loadname =['Catchperformance_withSNR_' num2str(peakfreqsare(ihz))];
+       
         for ialignment=1:2
             
             storeacrossPpant_onsetBP=[];
@@ -1124,16 +1103,8 @@ if job.concaterpdataacrossppants==1
             cd('EEG')
             cd('GFX_Pre-RESS')
             
-            switch ihz
-                case 1
-                    savename='GFX_Catchperformance_withSNR_15';
-                case 2
-                    savename='GFX_Catchperformance_withSNR_20';
-                    case 3
-                    savename='GFX_Catchperformance_withSNR_30';
-                    case 4
-                    savename='GFX_Catchperformance_withSNR_40';
-            end
+            savename=['GFX_Catchperformance_withSNR_' num2str(peakfreqsare(ihz)) '_min0_RESS'];
+            
             
             if ialignment==2
                 savename = [savename ',BPaligned'];

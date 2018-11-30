@@ -22,32 +22,26 @@ dbstop if error
 
 
 job.epochperppant_PFI=0; %epochs raw EEG and labels according to number and direction of target PFI involved (still time-domain).
-
-
 job.erpimagePFIusingSNR=0; %freq domain within participant, any number of targets, just increasing or decreasing PFI.
 
-job.ppantPFI_topotime=0; %appends to above, for topos of PFI increase or decrease.
+job.ppantPFI_topotime=0; %appends to above, for topos of PFI increase or decrease. % completed for 15,20,5 Hz.
 
 job.concaterpdataacrossppants=0; %Concats all Increase/ Decrease  % change here for MIMINIM PFI duration required in plot..
-
 job.erpimageacrossppants=0;
-
 job.concaterpdataacrossppants_keepnumberSeparate=0; %concats for sep num PFI, based on accum period after.
 
+%
 job.concatTOPOTIMEacrossppants=1;
 
-% TOPO TIME in new script for Will's data. 
+% plotting TOPO TIME in new script for Will's data. 
 % job.plotTOPOtimeacrossppants=0; %%%%%%%%%%% use this to plot spatial correlation over time also (see job2 within).
 
 %%%%%%%
-job.BPandSSVEPtimecourseacrossppants=1; %this uses all/any PFI. (any duration, any number).
+job.BPandSSVEPtimecourseacrossppants=0; %this uses all/any PFI. (any duration, any number).
 %%%%%%%
 job.SSVEPtimecourseSelectchans=0; %combines across certain channels.
-
 job.FirstSIGintimecourse=0; %this uses all/any PFI. (any duration, any number).
-
 job.BPandSSVEPtimecourseacrossppants_numSeparate=0; %this uses all/any PFI. (any duration, any number).
-
 job.BPandSSVEPtimecourseacrossppants_dursSeparate=0; %this uses all/any PFI. (any duration, any number).
 
 %remaining participants after behavioral data analysis/exclusion
@@ -820,7 +814,7 @@ if job.ppantPFI_topotime==1
     % peakfreqsare=[20,40]; %hz
     %timing
     tt = 0:1/srate:60;
-    
+    snrmethod=2;
     %%
     param_spctrm.tapers = [1 1];
     param_spctrm.Fs= [250];
@@ -830,7 +824,7 @@ if job.ppantPFI_topotime==1
     %%
     for ifol = allppants
         
-        for hzis=[1,2,3,4,7];
+        for hzis=[1,2,7];
             usehz = peakfreqsare(hzis);
             
             
@@ -880,8 +874,8 @@ if job.ppantPFI_topotime==1
                 end
                 datais=bsdata;
                 %%
-                snr_grmout=zeros(64,14); % chans by time points.
-%                 snr_grmout=zeros(64,size(datais,1),14);
+%                 snr_grmout=zeros(64,14); % chans by time points.
+                snr_grmout=zeros(64,size(datais,1),14);
                 for ichan=1:64
                     datacr=squeeze(datais(:,ichan,:));
                     
@@ -1004,8 +998,8 @@ if job.ppantPFI_topotime==1
                     snrgrm20=acrSNRsort_rmv;
                 end
                 
-                snr_grmout(ichan,:)=squeeze(nanmean(snrgrm20,2));
-%                 snr_grmout(ichan,:,:)=snrgrm20';
+%                 snr_grmout(ichan,:)=squeeze(nanmean(snrgrm20,2));
+                snr_grmout(ichan,:,:)=snrgrm20';
                 end
                 %%
                 
@@ -1540,43 +1534,116 @@ end
     %%
 if job.concatTOPOTIMEacrossppants==1
     %%
-    for ihz=[1:4,7]
+    for verData=2
         
-        usehz=peakfreqsare(ihz);
-        loadname=['PFIperformance_withSNR_' num2str(usehz) ];
-
-        storeacrossPpant_onsetSNR_chans=zeros(length(allppants),64,14);
-        storeacrossPpant_offsetSNR_chans=zeros(length(allppants),64,14);
-        
-        icounter=1;
-        
-        for ippant = allppants
-            cd(basefol)
-            cd('EEG')
-            cd(pdirs(ippant).name);
-            %onset types
+        for ihz=[1,2,7]
             
-            load(loadname)
-%             storeacrossPpant_onsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_onsetSNR_allchan,2));
-%             storeacrossPpant_offsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_offsetSNR_allchan,2));
-            storeacrossPpant_onsetSNR_chans(icounter,:,:)=Ppant_onsetSNR_allchan;
-            storeacrossPpant_offsetSNR_chans(icounter,:,:)=Ppant_offsetSNR_allchan;
+            usehz=peakfreqsare(ihz);
+            loadname=['PFIperformance_withSNR_' num2str(usehz) ];
             
-            icounter=icounter+1;
+            storeacrossPpant_onsetSNR_chans=zeros(length(allppants),64,14);
+            storeacrossPpant_offsetSNR_chans=zeros(length(allppants),64,14);
+            
+            icounter=1;
+            if verData==1
+                for ippant = allppants
+                    cd(basefol)
+                    cd('EEG')
+                    cd(pdirs(ippant).name);
+                    %onset types
+                    
+                    load(loadname)
+                    %             storeacrossPpant_onsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_onsetSNR_allchan,2));
+                    %             storeacrossPpant_offsetSNR_chans(icounter,:,:)=squeeze(nanmean(Ppant_offsetSNR_allchan,2));
+                    storeacrossPpant_onsetSNR_chans(icounter,:,:)=Ppant_onsetSNR_allchan;
+                    storeacrossPpant_offsetSNR_chans(icounter,:,:)=Ppant_offsetSNR_allchan;
+                    
+                    icounter=icounter+1;
+                end
+                %%
+                cd(basefol)
+                cd('EEG')
+                cd('GFX_Pre-RESS')
+                %%
+                
+                savename=['GFX_PFIperformance_withSNR_' num2str(usehz) '_allchan'];
+                
+                save(savename, 'storeacrossPpant_onsetSNR_chans',...
+                    'storeacrossPpant_offsetSNR_chans', 'tgrm');
+                
+                
+            else % downsample PFI.
+                %downsample to how many trials?
+                
+                dsnum=48;
+                %how many times?
+                nshuff=100;
+                
+                
+                storeacrossPpant_onsetSNR_chans = zeros(length(allppants),64,nshuff,14); %retain across shuffles.
+                storeacrossPpant_offsetSNR_chans=storeacrossPpant_onsetSNR_chans ;
+                
+                for ippant = allppants
+                    
+                    
+                    cd(basefol)
+                    cd('EEG')
+                    cd(pdirs(ippant).name);
+                    
+                    %onset types
+                    
+                    load(loadname)
+                    
+                    % downsample with replacement,
+                    dsdata_ons = zeros(64, nshuff,14); %
+                    dsdata_offs= zeros(64, nshuff,14); %
+                    
+                    
+                    for ids=1:nshuff
+                        %random trials (since 24 catch trials (max).
+                        dstrials= randi([1 size(Ppant_onsetSNR_allchan,2)],[1 dsnum]);
+                        % % dstrials=randperm(size(Ppant_onsetSNR_allchan,2), dsnum);
+                        %
+                        dsdata_ons(:,ids,:) =squeeze(nanmean(Ppant_onsetSNR_allchan(:, dstrials,:),2));
+                        
+                        %can have different trial numbers for onsets and
+                        %offsets. so reperform.
+                        dstrials= randi([1 size(Ppant_offsetSNR_allchan,2)],[1 dsnum]);
+                        %                         dstrials=randperm(size(Ppant_offsetSNR_allchan,2), dsnum);
+                        dsdata_offs(:,ids,:) =squeeze(nanmean(Ppant_offsetSNR_allchan(:, dstrials,:),2));
+                    end
+                    
+                    % mean over permutations.
+                    storeacrossPpant_onsetSNR_chans(icounter,:,:,:)=dsdata_ons;
+                    storeacrossPpant_offsetSNR_chans(icounter,:,:,:)=dsdata_offs;
+                    
+                    icounter=icounter+1;
+                    
+                    
+                    
+                end
+                %%
+                cd(basefol)
+                cd('EEG')
+                cd('GFX_Pre-RESS')
+                %%
+%                 cd('newplots-MD')
+                
+                
+                        savename=['GFX_PFIperformance_withSNR_' num2str(usehz) '_allchan'];
+                
+                
+                %adjust variable name
+                storeacrossPpant_onsetSNR_chans_downsampled =storeacrossPpant_onsetSNR_chans;
+                storeacrossPpant_offsetSNR_chans_downsampled =storeacrossPpant_offsetSNR_chans;
+                
+                save(savename, 'storeacrossPpant_onsetSNR_chans_downsampled',...
+                    'storeacrossPpant_offsetSNR_chans_downsampled', 'tgrm', '-append');
+                
+            end
         end
-        %%
-        cd(basefol)
-        cd('EEG')
-        cd('GFX_Pre-RESS')
-        %%
-        
-        savename=['GFX_PFIperformance_withSNR_' num2str(usehz) '_allchan'];
-        
-        save(savename, 'storeacrossPpant_onsetSNR_chans',...
-            'storeacrossPpant_offsetSNR_chans', 'tgrm');
         
     end
-    
 end
 % %%%%% %%% %% % % %
 % %%%%% %%% %% % % %% %%%%% %%% %% % % %

@@ -4,7 +4,8 @@
 %all targets are present/ away from Catch stimulus onset.
 
 %%%%% NEW FOR WILLS DATA!!!
-
+clear all
+% close all
 
 addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
 cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
@@ -1047,7 +1048,7 @@ if job.erpimagePpantlevel==1
     useSNRorhilbert=1;
     for ifol = allppants
         
-        for ihz=[1,2,7]; %TGs1 TGs 2, 20hz 40 hz.
+        for ihz=[3,4,5,6]; %TGs1 TGs 2, 20hz 40 hz.
             
             
             usehz= peakfreqsare(ihz);
@@ -1419,7 +1420,7 @@ if job.concaterpdataacrossppants==1
     
     ppantsmoothing=1; % average across participants, after smoothing, or no.
     
-    for ihz=[1,2,7]
+    for ihz=[3:6];%[1,2,7]
         usehz=peakfreqsare(ihz);
         
             loadname=['PFIperformance_withSNR_' num2str(usehz) '_RESS'];
@@ -1928,33 +1929,50 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
     
     counter=1;
     hzcounter=1;
-    for hzis=[1, 2, 7]
+    
+    %each Hz has a separate ylim range to optimize plots:
+    ylimsareHz=[1.1,1.8;... %15 hz
+             2.7,3.1;...%20 Hz
+             .5, 1;... % 30 Hz
+             2.8,3.3;... % 40 Hz
+             0.4,.9;... % 45
+             2.2,2.5;...
+             .3, .6]; % 5 Hz
+    
+         hzlabel={'f1', 'f2', '2f1', '2f2', '3f1', '3f2*', 'f2-f1'};
+         
+         
+    for hzis=5:6%[1, 2, 7]
         cd(basefol)
         cd('EEG')
         cd('GFX_EEG-RESS')
         usehz= peakfreqsare(hzis);
         switch hzis
-            case 1
-                
-                ylimsare=[1.1, 1.8];
+            case {1,3,5}
+                                
                 col='b';
                 flickeris = 'Target';
-            case 2
+            case {2,4}
 %                 ylimsare=[2.5, 3.2];
-                ylimsare=[2.7, 3.1];
+                
                 col=[.2 .2 .2];
                 flickeris = 'Background';
-                
-                case 7
+            case 6
+                col=[.2 1 .2];
+                flickeris = 'Overlap';                
+            case 7
 %                 ylimsare=[2.5, 3.2];
-                ylimsare=[.3, .6];
+                
                 col='m';
                 flickeris = 'Intermodulation';
         end
+        
+        ylimsare=ylimsareHz(hzis,:);
+        
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
 %         tgrm = timeidDYN;
         %%
-        for itimezero=1%:2
+        for itimezero=2%:2
             
             
             switch itimezero
@@ -2071,7 +2089,7 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
 %             ylabel(c, {['RESS log(SNR)']})
 
 if hzis~=7    
-            title([flickeris ' ' num2str(usehz) ' Hz (f' num2str(hzis) ')'])
+            title([flickeris ' ' num2str(usehz) ' Hz (' hzlabel{hzis} ')'])
 else
             title([flickeris ' ' num2str(usehz) ' Hz (f2-f1)'])
 end
@@ -2337,7 +2355,7 @@ if job.erpimage_catchPpantlevel==1
     useSNRorhilbert=1;
     for ifol = allppants
         
-        for ihz=[1,2,7]; %TGs1 TGs 2, 20hz 40 hz.
+        for ihz=[3:6]; %TGs1 TGs 2, 20hz 40 hz.
             
             
             usehz= peakfreqsare(ihz);
@@ -2357,65 +2375,82 @@ if job.erpimage_catchPpantlevel==1
                 switch itype
                     case 1 % pure catch onset
                     
-                    if ihz==1
-                    datatouse = ress_catchonsetTGs(1,:,:);
-                    elseif ihz== 2
-                        datatouse = ress_catchonsetBGs(1,:,:);
-                    elseif ihz==7
-                        datatouse = ress_catchonsetIMs(1,:,:);
-                    end
-
+                        switch ihz
+                            case {1,3,5} % TGs
+                                %adjust to 1,2,3
+                                ind = ceil(ihz/2);
+                                datatouse = ress_catchonsetTGs(ind,:,:);
+                            case {2,4,6} % BGs
+                                ind=ihz/2;
+                                datatouse = ress_catchonsetBGs(ind,:,:);
+                            case 7                                
+                                datatouse = ress_catchonsetIMs(1,:,:);
+                        end
                     BPstouse = catchonsetBPs;
-                    ctype = 'catch onset visible';
-                    
+                    ctype = 'catch onset visible';                    
                     case 2 %pure catch offset
                     
-                    if ihz==1
-                    datatouse = ress_catchoffsetTGs(1,:,:);
-                    elseif ihz== 2
-                        datatouse = ress_catchoffsetBGs(1,:,:);
-                    elseif ihz==7
-                        datatouse = ress_catchoffsetIMs(1,:,:);
-                    end
+                        switch ihz
+                            case {1,3,5} % TGs
+                                %adjust to 1,2,3
+                                ind = ceil(ihz/2);
+                                datatouse = ress_catchoffsetTGs(ind,:,:);
+                            case {2,4,6} % BGs
+                                ind=ihz/2;
+                                datatouse = ress_catchoffsetBGs(ind,:,:);
+                            case 7
+                                datatouse = ress_catchoffsetIMs(1,:,:);
+                        end
 
                     BPstouse = catchoffsetBPs;
                     ctype = 'catch offset visible';
                     
                     case 3 % BP to catch
                         
-                    if ihz==1
-                    datatouse = ress_BPcatchonsetTGs(1,:,:);
-                    elseif ihz== 2
-                        datatouse = ress_BPcatchonsetBGs(1,:,:);
-                    elseif ihz==7
-                        datatouse = ress_BPcatchonsetIMs(1,:,:);
-                    end
+                        switch ihz
+                            case {1,3,5} % TGs
+                                %adjust to 1,2,3
+                                ind = ceil(ihz/2);
+                                datatouse = ress_BPcatchonsetTGs(ind,:,:);
+                            case {2,4,6} % BGs
+                                ind=ihz/2;
+                                datatouse = ress_BPcatchonsetBGs(ind,:,:);
+                            case 7
+                                datatouse = ress_BPcatchonsetIMs(1,:,:);
+                        end
 
                     BPstouse = withincatchonsetBPs;
                     ctype = 'within catch onset BP';
                     
                     case 4
                         
-                    if ihz==1
-                    datatouse = ress_BPcatchoffsetTGs(1,:,:);
-                    elseif ihz== 2
-                        datatouse = ress_BPcatchoffsetBGs(1,:,:);
-                    elseif ihz==7
-                        datatouse = ress_BPcatchoffsetIMs(1,:,:);
-                    end
+                        switch ihz
+                            case {1,3,5} % TGs
+                                %adjust to 1,2,3
+                                ind = ceil(ihz/2);
+                                datatouse = ress_BPcatchoffsetTGs(ind,:,:);
+                            case {2,4,6} % BGs
+                                ind=ihz/2;
+                                datatouse = ress_BPcatchoffsetBGs(ind,:,:);
+                            case 7
+                                datatouse = ress_BPcatchoffsetIMs(1,:,:);
+                        end
 
                     BPstouse = postcatchoffsetBPs;
                     ctype = 'post offset BP';
                     
                     case 5 % invisible catch
-                        
-                    if ihz==1
-                    datatouse = ress_invisiblecatchonsetTGs(1,:,:);
-                    elseif ihz== 2
-                        datatouse = ress_invisiblecatchonsetBGs(1,:,:);
-                    elseif ihz==7
-                        datatouse = ress_invisiblecatchonsetIMs(1,:,:);
-                    end
+                        switch ihz
+                            case {1,3,5} % TGs
+                                %adjust to 1,2,3
+                                ind = ceil(ihz/2);
+                                datatouse = ress_invisiblecatchonsetTGs(ind,:,:);
+                            case {2,4,6} % BGs
+                                ind=ihz/2;
+                                datatouse = ress_invisiblecatchonsetBGs(ind,:,:);
+                            case 7
+                                datatouse = ress_invisiblecatchonsetIMs(1,:,:);
+                        end
 
                     BPstouse = invisibleonsetBPs;
                     ctype = 'invisible catch';
@@ -2438,9 +2473,6 @@ if job.erpimage_catchPpantlevel==1
                 %                 baddurs = find(RTstouse<30);
                 %remove those trials.
                 %                 allt(baddurs)=[];
-                
-                
-                
                
                 
                 %%
@@ -2764,14 +2796,14 @@ end
 %%
 
 if job.concaterpdataforcatchacrossppants==1
-    
+    %%
     
     dursMINIMUM= 0; %1 second. % or change to  %this works.
 %     dursMINIMUM=123; % selects top third!.
     
     ppantsmoothing=1; % average across participants, after smoothing, or no.
     
-    for ihz=[1,2,7];
+    for ihz=[3:6];
         usehz=peakfreqsare(ihz);
         
             loadname=['Catch_performance_withSNR_' num2str(usehz) '_RESS'];
@@ -4376,14 +4408,16 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 
     clf
     rmvbase=0; % normalize
-    checksigON=1; % check sigs between directions
-    checkcluster=1; % clusters only
+    checksigON=0; % check sigs between directions
+    checkcluster=0; % clusters only
     
 
     collectBarwindow = [0, 1]; % seconds to collect SNR difference between disappearance/reappearance.
     
     % we have 6 combinations for Disap - Reap : ( 5/15/20 hz x PFI/Catch)
-    collectBardata = zeros(6, length(allppants));
+    
+%     collectBardata = zeros(6, length(allppants));
+    collectBardata = zeros(length(peakfreqsare)*2, length(allppants));
     
     
     % plot specs:
@@ -4394,8 +4428,8 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
     cd('GFX_EEG-RESS')
     %
     %     cd('newplots-MD')
-    colsare={'b' , 'k',[],[],[],[],'m'}; % blue for tg, black for BG.
-    hzare={'TG (f1)' , 'BG (f2)',[],[],[],[],'IM (f2-f1)'}; % blue for tg, black for BG.
+    colsare={'b' , 'k','b','k','b','g','m'}; % blue for tg, black for BG.
+    hzare={'TG (f1)' , 'BG (f2)','TG (2f1)','BG (2f2)','TG (3f1)','TGBG','IM (f2-f1)'}; % blue for tg, black for BG.
     linetypes={'--', '-', [],[],'--'};
     legendis=[];
     lgc=1;
@@ -4408,7 +4442,7 @@ clearvars yl;
 % barchart output.
 
 barcounter=1;
-for hzis=[1,2,7]%[1,2]%
+for hzis=1:7% need all 7 for bar data.
     clf
     for idtype=1:2
         switch idtype
@@ -4809,7 +4843,7 @@ for hzis=[1,2,7]%[1,2]%
 % print per FREQ.        
         cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
-    print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
+%     print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
 %     print('-d
         
     end
@@ -4822,12 +4856,11 @@ for hzis=[1,2,7]%[1,2]%
     figure(2);
     clf
     ylabel({['Disappearance - Reappearance'];['\Delta RESS log SNR']}); hold on
-    bar(1:2, mDelta(1:2), 'b'); hold on; % plot different colors
+    bar(1:2, mDelta(1:2), 'b'); hold on; % plot different colors (TG1)
     bar(3:4, mDelta(3:4), 'Facecolor', [.2 .2 .2]); % plot different colors
-    bar(5:6, mDelta(5:6), 'm');
-    
-    
-    shg; hold on; eh=errorbar(1:6, mDelta, stEDelta, 'color', 'k', 'LineStyle', ['none'], 'LineWidth', 2);
+    bar(5:6, mDelta(13:14), 'm');
+ 
+    shg; hold on; eh=errorbar(1:6, mDelta([1,2,3,4,13,14]), stEDelta([1,2,3,4,13,14]), 'color', 'k', 'LineStyle', ['none'], 'LineWidth', 2);
     %
     ylim([-1 .5])
     %%
@@ -4836,6 +4869,123 @@ for hzis=[1,2,7]%[1,2]%
     
     %%
     print('-dpng', ['Change in SNR Barchart summary from ' num2str(collectBarwindow(1)) ' to ' num2str(collectBarwindow(2)) 's'])
+    %% alternatively, plot separately per TG or BG specific response (similar to Donner et al., JNS 2016).
+    % rearrange all TG, BG and IM responses (data and errorbars)
+    TG= mDelta([1:2; 5:6; 9:10]);
+    eTG=stEDelta([1:2; 5:6; 9:10]);
+    % avoid plotting 60 Hz
+    BG= mDelta([3:4; 7:8]);
+    eBG=stEDelta([3:4; 7:8]);
+%     BG= mDelta([3:4; 7:8; 11:12]);
+%     eBG=stEDelta([3:4; 7:8; 11:12]);
+    IM= mDelta([13,14]);
+    eIM= stEDelta([13,14]);
+    % errorbar conditions to place on stacked plot 
+    numgroups = 3;
+    numbars = 2;   
+    groupwidth = min(0.8, numbars/(numbars+1.5));
+    
+    allfontsize=20;
+    yall=[-1 .7];
+    
+ %   %%%%%%%%%% PLOTTING
+    % now plot this version for comparison
+    figure(3); clf    
+    
+    % target specific responses
+    
+    subplot(1,3,1)
+    bh=bar(TG, 'b'); shg; legend('PFI', 'Catch')        
+    title('Target specific responses')
+    bh(2).FaceAlpha = .1;    
+    hold on
+    
+                for i = 1:numbars
+                    hold on
+                    %          Based on barweb.m by Bolu Ajiboye from MATLAB File Exchange
+                    x = (1:numgroups) - groupwidth/2 + (2*i-1) * groupwidth / (2*numbars);  % Aligning error bar with individual bar
+                    %
+                    errb= errorbar(x, TG(:,i), eTG(:,i), 'k', 'linestyle', 'none');
+                    errb.LineWidth = 1;
+                    %
+                end
+   
+     ylabel({['Disappearance - Reappearance'];['\Delta RESS log SNR']}); hold on
+     xtspace=get(gca, 'xtick');   
+     set(gca, 'xticklabel', {'Target (f1)', ' (2f1)', ' (3f1)'},  'ytick', [-1:.5:1], 'fontsize', allfontsize)
+     ylim([yall])
+     
+     
+%  Background specific responses
+%
+    subplot(1,3,2)
+    bh=bar(BG, 'Facecolor', [.2 .2 .2]);    
+    bh(2).FaceAlpha = .1;
+    title('Background specific responses')
+    legend('PFI', 'Catch')
+    numgroups=2;
+     hold on   
+                for i = 1:numbars
+                    hold on
+                    %          Based on barweb.m by Bolu Ajiboye from MATLAB File Exchange
+                    x = (1:numgroups) - groupwidth/2 + (2*i-1) * groupwidth / (2*numbars);  % Aligning error bar with individual bar
+                    %
+                    errb= errorbar(x, BG(:,i), eBG(:,i), 'k', 'linestyle', 'none');
+                    errb.LineWidth = 1;
+                    %
+                end
+     ylabel({['Disappearance - Reappearance'];['\Delta RESS log SNR']}); hold on
+          set(gca, 'xticklabel', {'Background (f2)', ' (2f2)', 'Mix (60 Hz)'},  'ytick', [-1:.5:1], 'fontsize', allfontsize)
+ylim(yall)
+
+% IM finally
+
+    subplot(1,3,3)
+    % add some nans so we can stack this plot like the others
+    IM(1:2,2)=NaN;
+    eIM(1:2,2)=NaN;
+
+    bh= bar(IM','m');    
+     bh(2).FaceAlpha = .1;
+    hold on
+    numgroups=2;
+    
+    for i = 1:numbars
+        hold on
+        %          Based on barweb.m by Bolu Ajiboye from MATLAB File Exchange
+        x = (1:numgroups) - groupwidth/2 + (2*i-1) * groupwidth / (2*numbars);  % Aligning error bar with individual bar
+        %
+        errb= errorbar(x, IM(i,:), eIM(i,:), 'k', 'linestyle', 'none');
+        errb.LineWidth = 1;
+        %
+    end
+%     errorbar(1:2, IM, eIM, 'k', 'linestyle','none')
+    
+    title('Intermodulation response')
+    legend('PFI', 'Catch')    
+     ylabel({['Disappearance - Reappearance'];['\Delta RESS log SNR']}); hold on
+               set(gca, 'xticklabel', {'Intermodulation (f2-f1)'},  'ytick', [-1:.5:1], 'fontsize', allfontsize)
+
+    ylim(yall)
+    xlim([.5 1.5])
+     shg
+    set(gcf, 'color', 'w')
+    %%  show ttests;
+    tresults = [];
+    for ihz = 1:14
+        
+        [~, p,~,stat]=ttest(collectBardata(ihz,:)); % compare to zero.
+        tresults(ihz,1)= stat.tstat;
+        tresults(ihz,2)= p;
+    end
+        %%
+    ttype = repmat({'PFI';'Catch'}, 7,1);
+    hztype= Interleave(peakfreqsare(1:7), peakfreqsare(1:7));
+    pcorr=fdr(tresults(:,2));
+    tresults(:,2)=pcorr;
+    tresultsTable=table(hztype', ttype, tresults);    
+    tresultsTable.Properties.VariableNames(1) = {'Hz'};
+    disp(tresultsTable)
     
 end
 % 

@@ -39,9 +39,9 @@ job.calcPFIdataperFreqandLoc=0; %resaves into PFI_only with new fields in struct
 
 job.concatPFIacrossPpants_num=0;
 job.concatPFIacrossPpants_byLoc=0;
-job.createShufflePFIdata_pernum=0;
-job.calcPFIdataperNum_shuffled=0;
-job.concatPFIacrossPpants_num_shuffled=0;
+job.createShufflePFIdata_pernum=1; % now with nshuff=1000
+job.calcPFIdataperNum_shuffled=1;
+job.concatPFIacrossPpants_num_shuffled=1;
 %
 
 job.concatPFIacrossPpants_slope_nulldistribution=0;
@@ -62,9 +62,9 @@ job.LMEnPFIwShuff=1;
 job.plotBehaviouraldata=0;
 
 % plot these together:
-job.plotBehaviouraldata_num_with_shuffled=0;
+job.plotBehaviouraldata_num_with_shuffled=1;
 
-job.compareSlopesofShuffledvsObserveddata=0;
+job.compareSlopesofShuffledvsObserveddata=1;
 
 
 
@@ -83,6 +83,7 @@ job.RMANOVA_PFI_byNum_vs_shuffled=0;
 
 
 nppants=19;
+excludeTransientlength = 30; %minimum frames for counted PFI. (Fs=60),
 
 %%
 if job.removeCatchperiodsfromBPtrace==1
@@ -146,7 +147,7 @@ if job.calcPFIdataperNum==1
     load('PFI_data.mat')
     %%
     
-    excludeTransientlength = 30; %minimum frames for counted PFI. (Fs=60),
+ 
     for ippant = 1:nppants
         
         
@@ -736,7 +737,7 @@ end
 %% based on IG's code (reshuffle_analysis)
 if job.createShufflePFIdata_pernum==1
     load('MD_AllBP_perppant.mat')
-    allRandomAllPP =zeros(length(allppants),200,5,3600);
+    allRandomAllPP =zeros(length(allppants),1000,5,3600);
     for ippant=1:length(allppants)
         goodPP=allppants(ippant);
         
@@ -746,8 +747,8 @@ if job.createShufflePFIdata_pernum==1
         
         BPdata=ppantTrialDatawithDetails(goodPP).AllBPData;
         
-        allRandom = zeros(200,5, 3600);
-        for countRand=1:200
+        allRandom = zeros(1000,5, 3600);
+        for countRand=1:1000
             %index of four random trials.
             randTrial=randi([1 48],1,4);
             %make sure none are the same:
@@ -787,7 +788,7 @@ if job.calcPFIdataperNum_shuffled==1 %resaves into ShuffledData
     for ippant = 1:size(allRandomAllPP,1)
         
         
-        for itrial=1:200
+        for itrial=1:1000
             
             accumBP = squeeze(allRandomAllPP(ippant,itrial,5,:))'; %combine each locations BP.
             dur0Disap=0;
@@ -1108,13 +1109,13 @@ if job.concatPFIacrossPpants_num_shuffled==1
     cd(basedir)
     load('ShuffledData')
     
-    Freq_NumPFI_acrossTrials_shuffled = nan(length(allppants),200,5);
-    mDurperNumPFI_acrossTrials_shuffled=nan(length(allppants),200,5);
-    totalDurperNumPFI_acrossTrials_shuffled=nan(length(allppants),200,5);
+    Freq_NumPFI_acrossTrials_shuffled = nan(length(allppants),1000,5);
+    mDurperNumPFI_acrossTrials_shuffled=nan(length(allppants),1000,5);
+    totalDurperNumPFI_acrossTrials_shuffled=nan(length(allppants),1000,5);
     
     for ippant = 1:length(shuffledPFI)
         
-        for itrial=1:200
+        for itrial=1:1000
             
             if shuffledPFI(ippant).Trial(itrial).Goodtrial==1 %not rejected
                 usedata=shuffledPFI(ippant).Trial(itrial);
