@@ -10,10 +10,10 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
  allppants=[1,2,4,6,7,9:19]; %
 
     %% %% %
-    job2.plotSpacedTimetopo=0; %1 x 4 topos
+    job2.plotSpacedTimetopo=1; %1 x 4 topos
     job2.plotComparativeTimetopo = 0; % new version, settled on - 0.5s, compares two topos at Disap and Reap in 2x2
     job2.plotMeanTIMEtopo_andtvals=0;
-    job2.plotSpatialCorrelation_overtime=1; % this is for 
+    job2.plotSpatialCorrelation_overtime=0; % this is for 
     job2.plotgroupedSNRovertime=0;
     
     
@@ -48,7 +48,7 @@ if job2.plotSpacedTimetopo==1
     
     %     colormap('parula')
     peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!
-    for usePFIorCatch=2%1:2
+    for usePFIorCatch=1%1:2
         
         if usePFIorCatch==1
             useD='PFI';
@@ -57,8 +57,13 @@ if job2.plotSpacedTimetopo==1
         end
         
         
-%         cmaxbyHz = [.5, .5, .1,.1,.1,.1, .025]; %PFI
-        cmaxbyHz = [.5, .75, .1,.1,.1,.1, .025]; %PFI
+if usePFIorCatch~=1 % catch    
+        cmaxbyHz = [.55, 1, .1,.1,.1,.1, .025]; %Catch
+else
+        cmaxbyHz = [.55, .9, .1,.1,.1,.1, .025]; %PFI
+end
+    
+        
         
         for ihz=[1,2,3,4,7]
             usehz = peakfreqsare(ihz);
@@ -160,7 +165,15 @@ if job2.plotSpacedTimetopo==1
 %                         caxis([-.05 .05]);
                     else
                         %                         caxis([0 max(squeeze(mean(dPLOT(:,:,tid),1)))])
-                        caxis([0 cmaxbyHz(ihz)])
+%                         caxis([0 cmaxbyHz(ihz)])
+%%
+if (cmaxbyHz(ihz)-.15) >0
+    
+                        caxis([cmaxbyHz(ihz)-.15  cmaxbyHz(ihz)])
+else
+                        caxis([0  cmaxbyHz(ihz)])
+end
+                        %%
                     end
                     %plot colorbar?
                     if icount==5
@@ -598,6 +611,8 @@ if  job2.plotSpatialCorrelation_overtime==1
     figure(1)
     clf
     
+    checkcluster=1;
+    
                 usenormalPFIordownsampled=2; % 1 for normal, 2 for downsample
 
     % can plot the mean correlation across subjs (corr1or2=1),
@@ -610,7 +625,7 @@ if  job2.plotSpatialCorrelation_overtime==1
      peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
 
    
-for usePFIorCatch=2%1:2
+for usePFIorCatch=1%1:2
     
     if usePFIorCatch==1
             useD='PFI';
@@ -635,7 +650,7 @@ for usePFIorCatch=2%1:2
              % completed for hz 1,2,7. 
 
              
-    for allhzcombos = [1,4,7] % these are the comparisons for tg,bg, and im.
+    for allhzcombos = 4%[1,4,7] % these are the comparisons for tg,bg, and im.
     hzcounter=1;
     hzcompare= hzcompareAll(allhzcombos,:);
     
@@ -904,24 +919,189 @@ for usePFIorCatch=2%1:2
                        if iPFIdir==2
                            %plot sig
                            pvals = zeros(1,size(ttestdata,3));
+                           tvals = pvals;
                            for itime=1:size(ttestdata,3)
                                
-                               [h, pvals(itime) ]= ttest(ttestdata(1,:,itime), ttestdata(2,:,itime)) ;
-                               
+                               [h, pvals(itime), ~, stats]= ttest(ttestdata(1,:,itime), ttestdata(2,:,itime)) ;
+                               tvals(itime)= stats.tstat;
                            end
-                           q=fdr(pvals, .05);
-                           sigspots = find(pvals<=q);
-                           
-                           for itime = 1:length(sigspots)
-                               
-                               rtime = sigspots(itime);
-                               hold on
-                               
-                               %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', sh.mainLine.Color)
-                               plot(tgrm(rtime)-3, yl(2)+dyl, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
-                           end
-                           
+%                            q=fdr(pvals, .05);
+
+                            %cluster correct p vals.
+%                            sigspots = find(pvals<=q);
+ sigs=find(pvals<.05);
+            %
+            %             %perform cluster based correction.
+            if length(sigs)>2 &&checkcluster==1
+                % find biggest cluster:
+                %finds adjacent time points
+                vect1 = diff(sigs);
+                v1 = (vect1(:)==1);
+                d = diff(v1);
+                clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
+                %grab largest
+                %                 ignore bad points.
+                
+                
+                % find biggest cluster:
+                %finds adjacent time points
+                sigs = find(pvals<.05);
+                
+                vect1 = diff(sigs);
+                v1 = (vect1(:)==1);
+                d = diff(v1);
+                clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
+                [~,maxClust] = max(clusterSTandEND(:,2)-clusterSTandEND(:,1));
+                
+                %
+                for icl=1:size(clusterSTandEND,1)
+                    
+                    %start and end are now:
+                    % change icl to maxClust if we only want the largest
+                    % cluster.
+                    STC=sigs(clusterSTandEND(icl,1));
+                    ENDC=sigs(clusterSTandEND(icl,2)+1);
+                    checktimes =STC:ENDC;
+                    observedCV = sum(abs(tvals(checktimes)));
+                    % now shuffle condition labels to see if this cluster is
+                    % sig (compared to chance).
+                    
+                    
+                    
+                    %all trials
+                    alltr=reshape(ttestdata, [length(allppants)*2, size(ttestdata,3)]);
+                    alltrialsvec = 1:size(alltr,1);
+                    
+                    nshuff=2000;
+                    
+                    sumTestStatsShuff = zeros(1,nshuff);
+                    for irand = 1:nshuff
+                        
+                      
+                            
+                            shD=zeros(size(ttestdata));
+                            %since this is a within subjects design, we permute
+                            %the subjet specific averages within each subject
+                            %(as per Maris & Oostenveld (2007).
+                            
+                            % for each subject, randomly permute the averages.
+                            %(Dsub1cond1,Datasub1cond2)
+                            for ippant = 1:size(ttestdata,2)
+                                
+                                if mod(randi(100),2)==0 %if random even number
+                                    shD(1,ippant,:) = ttestdata(1,ippant,:); % all time points.
+                                    shD(2,ippant,:) = ttestdata(2,ippant,:); % all time points.
+                                else
+                                    shD(1,ippant,:) = ttestdata(2,ippant,:); % all time points.
+                                    shD(2,ippant,:) = ttestdata(1,ippant,:); % all time points.
+                                end
+                                
+                                %                             shD(ipartition,ippant,:) = pdata;
+                            end
+                            
+                       
+                        
+                        %                     tvalspertimepoint = zeros(1,length(checktimes));
+                        %%
+                        % figure(3); clf; plot(squeeze(mean(shD(1,:,:),2))); hold on
+                        %                     plot(squeeze(mean(shD(2,:,:),2))); ylim([2.4 3])
+                        %%
+                        testdata = squeeze(shD(1,:,:)) - squeeze(shD(2,:,:));
+                        p=[];
+                        for itest = 1:length(checktimes)
+                            
+                            [~, p(itest), ~,stat]= ttest(testdata(:,checktimes(itest)));
+                            
+                            tvalspertimepoint(1,itest) = stat.tstat;
+                        end
+                        
+                        % the null hypothesis is that these prob distributions
+                        % are exchangeable, so retain this permutation cluster-
+                        % level stat.
+                        sumTestStatsShuff(1,irand) = sum((tvalspertimepoint));
+                        
+                        
+                    end %repeat nshuff times
+                    
+                    
+                    %is the observed greater than CV?
+                    % plot histogram:
+                    %%
+                    figure(2);
+                    
+                    clf
+                    
+                    %                    H=histogram(abs(sort(sumTestStatsShuff)));
+                    H=histogram((sort(sumTestStatsShuff)));
+                    % fit CDF
+                    cdf= cumsum(abs(H.Data))/ sum(abs(H.Data));
+                    %the X values (actual CV) corresponding to .01
+                    [~,cv05uncorr] = (min(abs(cdf-.975)));
+                    [~,cv01uncorr] = (min(abs(cdf-.99)));
+                    [~,cv001uncorr] = (min(abs(cdf-.999)));
+                    %                 [~,cv01uncorr] = (min(abs(cdf-.99)));
+                    %                 [~,cv001uncorr] = (min(abs(cdf-.999)));
+                    hold on
+                    pCV=plot([observedCV observedCV], ylim, ['r-']);
+                    
+                    p05=plot([H.Data(cv05uncorr) H.Data(cv05uncorr)], ylim, ['k:']);
+                    plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k-']);
+                    plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k-']);
+                    %                 plot([H.Data(cv01uncorr) H.Data(cv01uncorr)], ylim, ['k:']);
+                    %                 plot([H.Data(cv001uncorr) H.Data(cv001uncorr)], ylim, ['k:']);
+                    legend([pCV p05], {['observed'] ['97.5%'] })
+                    
+                    %%
+                    
+                    
+                    if observedCV>=H.Data(cv05uncorr)
+                        title(['sum tvals = ' num2str(observedCV)]);
+                        %              title('Spatial Cluster  Significant!')
+                        %                     timeidDYN=tgrm-3;
+                        timeidDYN=tgrm-3;
+                        figure(1);
+                        if icl==1
+                            yl=get(gca, 'ylim');
+                        end
+                        
+                            sigplace = yl(2)+.1*(diff(yl));
+                        
+                            disp(['sig at ' num2str(timeidDYN(checktimes))])
+                        for itime=checktimes
+                            
+                            hold on
+                            
+                            
+                            plot(timeidDYN(itime), sigplace, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
+                            
+                            %                         plot(timeidDYN(itime), 3.25, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
+                            %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'm')
+                        end
+                    end
+                    
+                    %
+                end
+            end
+            
+            %% adjust ylims.
+            yl=get(gca, 'ylim');
+            %extend by 10% (keeps sig points in relative space).
+            dyl=diff(yl)*.1;
+            ylim([yl(1)-dyl yl(2)+dyl])
+            
                        end
+
+% 
+%                            for itime = 1:length(sigspots)
+%                                
+%                                rtime = sigspots(itime);
+%                                hold on
+%                                
+%                                %                             plot(tgrm(itime)-3, sigheight, ['*' ],'markersize', 15, 'linewidth', 3, 'color', sh.mainLine.Color)
+%                                plot(tgrm(rtime)-3, yl(2)+dyl, ['*' ],'markersize', 15, 'linewidth', 3, 'color', 'k')
+%                            end
+%                            
+%                        end
                    else
                    %sanity check - compare to across subj correlation
                    da=squeeze(nanmean(d1,1));
@@ -1006,11 +1186,13 @@ for usePFIorCatch=2%1:2
     
     %                legend([leg(1) leg(2)], {'target invisible' 'target visible'})
     %
+    figure(1);
  yl=get(gca, 'ylim');                   
                    %extend by 10% (keeps sig points in relative space).
                    dyl=diff(yl)*.1;
                    ylim([yl(1)-dyl yl(2)+dyl])
-
+hold on;
+plot([0 0 ], ylim, 'k--')
     
                    xlim([-1.75 1.75])
     %
