@@ -5,7 +5,7 @@ cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour
 load('MD_AllBP_perppant.mat')
 load('Catchperformance.mat', 'catchStruct')
 
-%
+%%
 cd ../
 cd('Figures')
 cd('All Participant Trials')
@@ -18,17 +18,17 @@ dbstop if error
 catchcol= 'r';
 
 %
-useshuffled=1;
+useshuffled=0
  
 %
 xt=0:1/60:60;
 dbstop if error
-for ippant = 15%:29
+for ippant = 4%:29
     % check all trials
     
     figure(1); clf
     
-    for itrial=31%:24
+    for itrial=13%:24
 %         subplot(8,3, itrial)
         
 %         colormap('Gray(4)')
@@ -138,16 +138,24 @@ retainedtrials = repmat(48, [1 length(prej)]);
  allppants=[1,2,4,6,7,9:19]; % new
  adjustedrej= retainedtrials -prej;
    catchfailpercent = 1- adjustedrej./retainedtrials;
+   % or plot just raw trial count.
+   catchfailrawcount= prej;
    
-   plotgoodppants = catchfailpercent(allppants);
+   % which to plot?
+%    plotgoodppants = catchfailpercent(allppants);
+   plotgoodppants = catchfailrawcount(allppants);
    
-   histogram(plotgoodppants,6);
-   xlabel('proportion of trials marked for rejection')
+   %%
+%    histogram(plotgoodppants,length(unique(plotgoodppants)));
+   bard = [5,4,5,2];
+   bar(bard);
+   xlabel('number of trials marked for rejection')
 ylabel('# of participants')
-set(gca, 'fontsize', 15*1.5)
+set(gca, 'fontsize', 15*1.5, 'xticklabel', {'0', '1', '2', '3'})
+xlim([ .25 4.75])
 set(gcf, 'color', 'w')
 % ylabel('# of subjects')
-xlim([0 .1])
+% xlim([0 .1])
 shg
     %%
     percrej=nansum(prej)/( 48);
