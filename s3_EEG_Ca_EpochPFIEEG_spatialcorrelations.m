@@ -13,11 +13,11 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
     job2.plotSpacedTimetopo=0; %1 x 4 topos
     job2.plotComparativeTimetopo = 0; % new version, settled on - 0.5s, compares two topos at Disap and Reap in 2x2
     job2.plotMeanTIMEtopo_andtvals=0;
-    job2.plotSpatialCorrelation_overtime=0; % this is for 
+    job2.plotSpatialCorrelation_overtime=1; % this is for 
 %     job2.plotgroupedSNRovertime=0;
     
     
-    job2.plotMDSovertime=1;
+    job2.plotMDSovertime=0;
 %
 %
 %
@@ -627,13 +627,16 @@ if  job2.plotSpatialCorrelation_overtime==1
      peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
 
    
-for usePFIorCatch=1%1:2
+for usePFIorCatch=2%1:2
     
     if usePFIorCatch==1
             useD='PFI';
-            falpha = .5;
+        printD=useD;    
+            falpha = .15;
     else
             useD='Catch';
+            printD='PMD';
+            
             falpha = .15;
             usenormalPFIordownsampled=1;
     end
@@ -652,7 +655,7 @@ for usePFIorCatch=1%1:2
              % completed for hz 1,2,7. 
 
              
-    for allhzcombos = 4%[1,4,7] % these are the comparisons for tg,bg, and im.  (see above)
+    for allhzcombos = [1,4,7] % these are the comparisons for tg,bg, and im.  (see above)
     hzcounter=1;
     hzcompare= hzcompareAll(allhzcombos,:);
     
@@ -714,12 +717,21 @@ for usePFIorCatch=1%1:2
                 %calculate spatial correlation over time:
                 colis='r';
                 linestyle='--';
+                
+                if usePFIorCatch==1
+                    markert ='o';
+                    else
+                        markert='square';
+                    end
+                
+                
             case 2
                 d1=offsetChans_20;
                 d2=offsetChans_40;
                 chis= 'target visible';
                 %                            colis='k';
                 linestyle='-';
+                markert ='none';
         end
         
         
@@ -897,10 +909,14 @@ for usePFIorCatch=1%1:2
                        st.patch.FaceAlpha = falpha;
                        st.edge(1).Color=colis;
                        st.edge(2).Color=colis;
+            %
+            st.mainLine.Marker = markert;
+            st.mainLine.MarkerSize=25;
                        
                        leg(iPFIdir)=st.mainLine;
                            
-                       
+                        %
+            
 
                        
                        %%
@@ -1156,7 +1172,7 @@ for usePFIorCatch=1%1:2
         ylabel({[num2str(peakfreqsare(hzcompare(1))) ' vs ' num2str(peakfreqsare(hzcompare(2))) ' Hz '];['spatial correlation [\it r\rm ]']})
 %         ylabel({['1f vs. 2f correlation [\itr\rm ]']})
 %         xlabel(['Time from ' chis ])
-        xlabel(['Time from ' useD ' report'])
+        xlabel(['Time from ' printD ' report'])
         set(gca, 'fontsize', 25)
         set(gcf, 'color', 'w')
         
@@ -1205,7 +1221,7 @@ plot([0 0 ], ylim, 'k--')
     cd('GFX spatial correlations')
     %
 %     title(['During ' useD ])
-    print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2))) ' ' useD])
+    print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2))) ' ' printD])
     
     end % Hz combos.
 end % PFI or Catch?

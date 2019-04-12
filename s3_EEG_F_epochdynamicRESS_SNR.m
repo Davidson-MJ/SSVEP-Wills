@@ -4445,7 +4445,7 @@ barcounter=1;
 %%
 for hzis=1:7% need all 7 for bar data.
     clf
-    for idtype=1:2
+    for idtype=1%1:2
         switch idtype
             case 1
                 useD= 'PFI';
@@ -4861,7 +4861,8 @@ for hzis=1:7% need all 7 for bar data.
 % print per FREQ.        
         cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
-    print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
+%     print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
+    print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
 %     print('-d
         
     end
