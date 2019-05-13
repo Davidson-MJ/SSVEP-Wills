@@ -4408,8 +4408,8 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 
     clf
     rmvbase=0; % normalize
-    checksigON=0; % check sigs between directions
-    checkcluster=0; % clusters only
+    checksigON=1; % check sigs between directions
+    checkcluster=1; % clusters only
     
 
     collectBarwindow = [0, 1]; % seconds to collect SNR difference between disappearance/reappearance.
@@ -4442,18 +4442,27 @@ clearvars yl;
 % barchart output.
 
 barcounter=1;
+%%
 for hzis=1:7% need all 7 for bar data.
     clf
-    for idtype=1:2
+    for idtype=1%1:2
         switch idtype
             case 1
                 useD= 'PFI';
-                sigcolor='k';
-                falpha = .5;  % alpha value to darken plot.
+                
+                falpha = .25;  % alpha value to darken plot.
+                %plot colour:
+                col=colsare{hzis};
+                
             case 2
                 useD= 'Catch_';
                 sigcolor='r';  % color of sig points on figure,
                 falpha = .15;  % alpha value to lighten plot.
+                
+                %** changed catch colour
+                %all now  red
+                col = 'r';
+                
         end
         cd(basefol)
         cd('EEG')
@@ -4463,10 +4472,10 @@ for hzis=1:7% need all 7 for bar data.
         
         load(['GFX_' useD 'performance_withSNR_' num2str(usehz) '_min0_RESS'])
         
-        
+        sigcolor=col;
         
         tbase = timeidDYN;
-        col=colsare{hzis};
+        
         hzp= hzare{hzis};
         
         ttestdata=[];
@@ -4487,6 +4496,13 @@ for hzis=1:7% need all 7 for bar data.
                     
                     chtype='target invisible';                    
                     linet='--';
+                    
+                    % new marker types:
+                    if idtype==1
+                    markert ='o';
+                    else
+                        markert='square';
+                    end
                 case 2
                     
                     if idtype==1
@@ -4498,6 +4514,7 @@ for hzis=1:7% need all 7 for bar data.
                     chtype='target visible';
                                        
                     linet='-';
+                    markert='none';
                     
                 case 3
                     useSNR=storeacrossPpant_onsetSNR+storeacrossPpant_offsetSNR;
@@ -4551,8 +4568,8 @@ for hzis=1:7% need all 7 for bar data.
             sh.edge(1).Color = col;
             sh.edge(2).Color = col;
             %
-            
-            
+            sh.mainLine.Marker = markert;
+            sh.mainLine.MarkerSize=25;
             xlabel(['Time from subjective report [s]'])%
             
             
@@ -4807,9 +4824,9 @@ for hzis=1:7% need all 7 for bar data.
                         yl=get(gca, 'ylim');
                         end
                         if idtype==1 % place sig markers at top of figure for PFI
-                            sigplace = yl(2)+.5*(diff(yl));
+                            sigplace = yl(2)+.7*(diff(yl));
                         else
-                            sigplace = yl(1)-.3*(diff(yl)); % place at bottom for catch
+                            sigplace = yl(1)-.2*(diff(yl)); % place at bottom for catch
                         end
                         for itime=checktimes
                             
@@ -4839,11 +4856,13 @@ for hzis=1:7% need all 7 for bar data.
         
     end % PFI vs Catch
     
-        
+    hold on 
+    plot([0 0 ], ylim, ['k-']);
 % print per FREQ.        
         cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
 %     print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
+    print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
 %     print('-d
         
     end
@@ -4895,9 +4914,10 @@ for hzis=1:7% need all 7 for bar data.
     % target specific responses
     
     subplot(1,3,1)
-    bh=bar(TG, 'b'); shg; legend('PFI', 'Catch')        
+    bh=bar(TG, 'b'); shg; legend('PFI', 'PMD')        
     title('Target specific responses')
-    bh(2).FaceAlpha = .1;    
+%     bh(2).FaceAlpha = .1;
+bh(2).FaceColor='r';
     hold on
     
                 for i = 1:numbars
@@ -4920,9 +4940,10 @@ for hzis=1:7% need all 7 for bar data.
 %
     subplot(1,3,2)
     bh=bar(BG, 'Facecolor', [.2 .2 .2]);    
-    bh(2).FaceAlpha = .1;
+%     bh(2).FaceAlpha = .1;
+    bh(2).FaceColor='r';
     title('Background specific responses')
-    legend('PFI', 'Catch')
+    legend('PFI', 'PMD')
     numgroups=2;
      hold on   
                 for i = 1:numbars
@@ -4946,7 +4967,8 @@ ylim(yall)
     eIM(1:2,2)=NaN;
 
     bh= bar(IM','m');    
-     bh(2).FaceAlpha = .1;
+%      bh(2).FaceAlpha = .1;
+bh(2).FaceColor='r';
     hold on
     numgroups=2;
     
@@ -4962,7 +4984,7 @@ ylim(yall)
 %     errorbar(1:2, IM, eIM, 'k', 'linestyle','none')
     
     title('Intermodulation response')
-    legend('PFI', 'Catch')    
+    legend('PFI', 'PMD')    
      ylabel({['Disappearance - Reappearance'];['\Delta RESS log SNR']}); hold on
                set(gca, 'xticklabel', {'Intermodulation (f2-f1)'},  'ytick', [-1:.5:1], 'fontsize', allfontsize)
 

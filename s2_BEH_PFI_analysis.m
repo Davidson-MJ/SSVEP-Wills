@@ -53,7 +53,7 @@ job.exportDatatoExcelfolonDesktop_jamovi =0; %can save as matlab or on desktop.
 
 %perform LME in matlab
 job.LMEonHzxLOC=0;
-job.LMEnPFIwShuff=1;
+job.LMEnPFIwShuff=0;
 
 %%%%%% plotting
 
@@ -62,9 +62,9 @@ job.LMEnPFIwShuff=1;
 job.plotBehaviouraldata=0;
 
 % plot these together:
-job.plotBehaviouraldata_num_with_shuffled=1;
+job.plotBehaviouraldata_num_with_shuffled=0;
 
-job.compareSlopesofShuffledvsObserveddata=1;
+job.compareSlopesofShuffledvsObserveddata=0;
 
 
 
@@ -775,7 +775,7 @@ if job.createShufflePFIdata_pernum==1
     
     try save('ShuffledData', 'allRandomAllPP')
     catch
-        save('ShuffledData', 'allRandomAllPP', '-append')
+        save('ShuffledData', 'allRandomAllPP', '-V7.3')
     end
     
     

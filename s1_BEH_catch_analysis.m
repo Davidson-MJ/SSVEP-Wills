@@ -29,7 +29,7 @@ job.calcNEWShuffledCatchOnsetBPProb=0; %!  ! ! ! new ver MD # 04/18.
 
 job.calcMissedcatchesbyTargperppant=0; % this appends to Catch Struct -> highlights those potentially missed catches in the all trials plots.
 
-job.plotCatchtracesbynumTargets_eachppant=0;  % also plots overall RTs to catch onset/offset.
+job.plotCatchtracesbynumTargets_eachppant=1;  % also plots overall RTs to catch onset/offset.
 job.plotCatchtracesbynumTargets=1; % not really by num targets, plots vs shuffled.
 
 
@@ -927,7 +927,7 @@ if job.plotCatchtracesbynumTargets_eachppant==1;
             %filtered seems better due to the large amount of
             %disappearances
             
-        for ippant=1%:nppants
+        for ippant=1:nppants
 %             subplot(4,5,ippant)
             RT=[];
             %% plot results of shuffled

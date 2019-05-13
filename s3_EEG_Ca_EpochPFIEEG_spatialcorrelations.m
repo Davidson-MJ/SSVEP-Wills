@@ -10,13 +10,14 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
  allppants=[1,2,4,6,7,9:19]; %
 
     %% %% %
-    job2.plotSpacedTimetopo=1; %1 x 4 topos
+    job2.plotSpacedTimetopo=0; %1 x 4 topos
     job2.plotComparativeTimetopo = 0; % new version, settled on - 0.5s, compares two topos at Disap and Reap in 2x2
     job2.plotMeanTIMEtopo_andtvals=0;
-    job2.plotSpatialCorrelation_overtime=0; % this is for 
-    job2.plotgroupedSNRovertime=0;
+    job2.plotSpatialCorrelation_overtime=1; % this is for 
+%     job2.plotgroupedSNRovertime=0;
     
     
+    job2.plotMDSovertime=0;
 %
 %
 %
@@ -606,6 +607,7 @@ end
 
 
 if  job2.plotSpatialCorrelation_overtime==1
+    %%
     cd(basefol)
     cd('GFX_Pre-RESS')
     figure(1)
@@ -625,13 +627,16 @@ if  job2.plotSpatialCorrelation_overtime==1
      peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
 
    
-for usePFIorCatch=1%1:2
+for usePFIorCatch=2%1:2
     
     if usePFIorCatch==1
             useD='PFI';
-            falpha = .5;
+        printD=useD;    
+            falpha = .15;
     else
             useD='Catch';
+            printD='PMD';
+            
             falpha = .15;
             usenormalPFIordownsampled=1;
     end
@@ -650,7 +655,7 @@ for usePFIorCatch=1%1:2
              % completed for hz 1,2,7. 
 
              
-    for allhzcombos = 4%[1,4,7] % these are the comparisons for tg,bg, and im.
+    for allhzcombos = [1,4,7] % these are the comparisons for tg,bg, and im.  (see above)
     hzcounter=1;
     hzcompare= hzcompareAll(allhzcombos,:);
     
@@ -712,12 +717,21 @@ for usePFIorCatch=1%1:2
                 %calculate spatial correlation over time:
                 colis='r';
                 linestyle='--';
+                
+                if usePFIorCatch==1
+                    markert ='o';
+                    else
+                        markert='square';
+                    end
+                
+                
             case 2
                 d1=offsetChans_20;
                 d2=offsetChans_40;
                 chis= 'target visible';
                 %                            colis='k';
                 linestyle='-';
+                markert ='none';
         end
         
         
@@ -895,10 +909,14 @@ for usePFIorCatch=1%1:2
                        st.patch.FaceAlpha = falpha;
                        st.edge(1).Color=colis;
                        st.edge(2).Color=colis;
+            %
+            st.mainLine.Marker = markert;
+            st.mainLine.MarkerSize=25;
                        
                        leg(iPFIdir)=st.mainLine;
                            
-                       
+                        %
+            
 
                        
                        %%
@@ -1154,7 +1172,7 @@ for usePFIorCatch=1%1:2
         ylabel({[num2str(peakfreqsare(hzcompare(1))) ' vs ' num2str(peakfreqsare(hzcompare(2))) ' Hz '];['spatial correlation [\it r\rm ]']})
 %         ylabel({['1f vs. 2f correlation [\itr\rm ]']})
 %         xlabel(['Time from ' chis ])
-        xlabel(['Time from ' useD ' report'])
+        xlabel(['Time from ' printD ' report'])
         set(gca, 'fontsize', 25)
         set(gcf, 'color', 'w')
         
@@ -1203,7 +1221,7 @@ plot([0 0 ], ylim, 'k--')
     cd('GFX spatial correlations')
     %
 %     title(['During ' useD ])
-    print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2))) ' ' useD])
+    print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2))) ' ' printD])
     
     end % Hz combos.
 end % PFI or Catch?
@@ -1211,255 +1229,590 @@ end
 %%
 
          
-       if  job2.plotgroupedSNRovertime==1;
-                 cd(basefol)
-        cd('newplots-MD')
-             figure(2)
-            clf
-               
-            
-            % can plot the mean correlation across subjs (corr1or2=1), 
-            %or take the across subj correlation(corr1or2=2).
-            corr1or2=1; 
-            
-            selectchans=[1:64]; %use whole head
-%             selectchans = [23:32,56:64]; % parieto-occipital only
-            
-                         load('GFX_PFIperformance_withSNR_20_allchan')
-               onsetChans_20 = storeacrossPpant_onsetSNR_chans;
-               offsetChans_20 = storeacrossPpant_offsetSNR_chans;
-                         load('GFX_PFIperformance_withSNR_40_allchan')
-                 onsetChans_40 = storeacrossPpant_onsetSNR_chans;
-               offsetChans_40 = storeacrossPpant_offsetSNR_chans;
-                 
-               %%
-               figure(1); clf
-               leg=[];
-               
-               % also store for final plot.
-               groupedharmonicCorrelations = zeros(2, length(allppants), 6, 33);
-               for iPFIdir=1:2%1:2 %onset and offset
-                  hold on
-                   switch iPFIdir
-                       case 1
-                           d1all=onsetChans_20;
-                           d2all=onsetChans_40;
-                           chis= 'target invisible';
-                   %calculate spatial correlation over time:
-                   colis='r';
-                   linestyle='-';
-                       case 2
-                           d1all=offsetChans_20;
-                           d2all=offsetChans_40;
-                           chis= 'target visible';
-%                            colis='k';
-linestyle=':';
-                   end
-                   
-                   
-                   legprint={};
-                   for changroup=1:6
-                       switch changroup
-                           case 1
-                               % Frontal 10 channels:
-                               selectchans = [1:7, 33:40]; %n=15 chans
-                               chang='Frontal';   
-                               colis='r';
-                           case 2
-                               selectchans=[41:43, 47,48, 8,9,12,13];
-                               chang='LeftTemp';
-                               colis='k';
-                           case 3
-                               selectchans=[44:46, 49,50, 10,11,15,16];
-                               chang='RightTemp';
-                               colis= [.5 .5 .5];
-                           case 4
-                               selectchans=[17:19,23,24,25,51:53, 56,57];
-                               chang='LeftParietal';
-                               colis = 'b';
-                           case 5
-                               selectchans=[20:22,25:27,53:55,58,59];
-                               chang='RightParietal';
-                               colis = [0 0 .5];
-                           case 6
-                               selectchans=[60:64, 28:32];
-                               chang='Occipital';
-                               colis='m';
-                               
-                       end
-                           
-                   
-                   %if restricting the channels for comparison
-                   d1=d1all(:,selectchans,:);
-                   d2=d2all(:,selectchans,:);
-                   
-                   
-                   % normalize by within channel SNR if necessary.
-                    if normEEGcorr==1;
-                        for id=1:2
-                            switch id
-                                case 1
-                                    dPLOT=d1;
-                                case 2
-                                    dPLOT=d2;
-                            end
-                                dPLOTtmp=zeros(size(dPLOT));
-                
-                                for ippant=1:size(dPLOT,1)
-                                    for ichan = 1:size(dPLOT,2)
-                                        prevsnr=squeeze(dPLOT(ippant,ichan,:));
-                                        thism=squeeze(mean(dPLOT(ippant,ichan,:)));
-                                        tmpsub= repmat(thism, [1, size(prevsnr,2)]);
-                                        dPLOTtmp(ippant,ichan,:) = prevsnr-tmpsub;
-                                    end
-                                    
-                                end
-                                dPLOT=dPLOTtmp;
-                                
-                                switch id
-                                    case 1
-                                        d1=dPLOT;
-                                    case 2
-                                        d2=dPLOT;
-                                end
-                        end
-                    placesig=.33; % for placing results of ttests on figure
-
-                    else
-                        placesig=.66; % for placing results of ttests on figure
-                    end
-            
-                   
-                   
-                   
-                   
-                   
-                   for ipl=1:3 % SNR then correlation
-                       placeis = iPFIdir + 2*(ipl -1);
-                       
-                       subplot(3,2,placeis);
-                       
-                       hold on
-                       switch ipl
-                           case 1
-                               datapl =squeeze(mean(d1,2)); %mean over chanss
-                               tis = '1f raw SNR';
-                           case 2
-                               datapl =squeeze(mean(d2,2)); %mean over chans
-                               tis = '2f raw SNR';
-                           case 3
-                               tis = '1f vs 2f [r]';
-                       
-                               corr_time = zeros(size(d1,1), size(d1,3));
-                               p_time = zeros(size(d1,1), size(d1,3));
-                               % per ppant, calculate corr over time
-                               for ippant = 1:size(d1,1)
-                                   for itime= 1:size(d1,3)
-                                       
-                                       %                              scatter(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
-                                       [r,p]= corr(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
-                                       corr_time(ippant,itime)=r;
-                                       p_time(ippant,itime)=r;
-                                   end
-                                   
-                               end
-                               
-                               datapl= corr_time;
-                               
-                       end
-                       %within subj error bars
-                       
-                       
-                       %adjust standard error as per COusineau(2005)
-                       %confidence interval for within subj designs.
-                       % y = x - mXsub + mXGroup,
-                       x = datapl;
-                       
-                       mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
-                       mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
-                       
-                       %for each observation, subjtract the subj average, add
-                       %the group average.
-                       NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
-                       
-                       
-                       corr_time=NEWdata;
-                       
-                       
-                       %                    subplot(1,2,iPFIdir)
-                       mP= squeeze(mean(corr_time,1));
-                       
-                       
-                       stP = std(corr_time)/sqrt(size(corr_time,1));
-                       
-                       
-                       st=shadedErrorBar(tgrm-3, mP, stP,[],1);
-                       st.mainLine.Color= colis;
-                       st.mainLine.LineStyle=linestyle;
-                       st.mainLine.LineWidth=3;
-                       st.patch.FaceColor=colis;
-                       st.edge(1).Color=colis;
-                       st.edge(2).Color=colis;
-                       
-                       leg(changroup)=st.mainLine;
-                      title(tis)     
-                      set(gca, 'fontsize', 15)
-                  axis tight
-                  xlabel(['Time from reporting'])
-                  ylabel(tis)
-                   end
-                   
-%                    ylim([-.1 .3])
-axis tight
-                  
-                   legprint=[legprint  {[chang ',n=' num2str(length(selectchans))]}];
-                   
-                   
-                   ylabel(tis)
-                   if changroup==6;
-                   legend([leg], legprint);
-                   end
-                   
-                   % store the correlation if that is what we are plotting,
-                   if ipl==3
-                   groupedharmonicCorrelations(iPFIdir, :, changroup,:)= datapl;
-                   
-                   end
-                   end
-                   
-                   
-                   
-%                    xlabel(['Time from ' chis ])
-               
+%        if  job2.plotgroupedSNRovertime==1;
+%                  cd(basefol)
+%         cd('newplots-MD')
+%              figure(2)
+%             clf
+%                
+%             
+%             % can plot the mean correlation across subjs (corr1or2=1), 
+%             %or take the across subj correlation(corr1or2=2).
+%             corr1or2=1; 
+%             
+%             selectchans=[1:64]; %use whole head
+% %             selectchans = [23:32,56:64]; % parieto-occipital only
+%             
+%                          load('GFX_PFIperformance_withSNR_20_allchan')
+%                onsetChans_20 = storeacrossPpant_onsetSNR_chans;
+%                offsetChans_20 = storeacrossPpant_offsetSNR_chans;
+%                          load('GFX_PFIperformance_withSNR_40_allchan')
+%                  onsetChans_40 = storeacrossPpant_onsetSNR_chans;
+%                offsetChans_40 = storeacrossPpant_offsetSNR_chans;
+%                  
+%                %%
+%                figure(1); clf
+%                leg=[];
+%                
+%                % also store for final plot.
+%                groupedharmonicCorrelations = zeros(2, length(allppants), 6, 33);
+%                for iPFIdir=1:2%1:2 %onset and offset
+%                   hold on
+%                    switch iPFIdir
+%                        case 1
+%                            d1all=onsetChans_20;
+%                            d2all=onsetChans_40;
+%                            chis= 'target invisible';
+%                    %calculate spatial correlation over time:
+%                    colis='r';
+%                    linestyle='-';
+%                        case 2
+%                            d1all=offsetChans_20;
+%                            d2all=offsetChans_40;
+%                            chis= 'target visible';
+% %                            colis='k';
+% linestyle=':';
+%                    end
 %                    
-               end
-               %%
-               figure(2)
-               clf
-               for idir=1:2
-                   switch idir
-                       case 1
-                           linet=':'
-                       case 2
-                           linet='-'
-                   end
-                           hold on
-              for igroup=6%:6
-                  plot(squeeze(nanmean(groupedharmonicCorrelations(idir,:, igroup,:),2)), linet)
-              end
-               end
-               shg
-%                legend([leg(1) leg(2)], {'target invisible' 'target visible'})
-               %%
-               axis tight
-%                ylim([.475 .675])
-             %%
-             cd('Figures')
-             %%
-             print('-dpng', 'grouped SNR BG freqs')
-         end
-    
+%                    
+%                    legprint={};
+%                    for changroup=1:6
+%                        switch changroup
+%                            case 1
+%                                % Frontal 10 channels:
+%                                selectchans = [1:7, 33:40]; %n=15 chans
+%                                chang='Frontal';   
+%                                colis='r';
+%                            case 2
+%                                selectchans=[41:43, 47,48, 8,9,12,13];
+%                                chang='LeftTemp';
+%                                colis='k';
+%                            case 3
+%                                selectchans=[44:46, 49,50, 10,11,15,16];
+%                                chang='RightTemp';
+%                                colis= [.5 .5 .5];
+%                            case 4
+%                                selectchans=[17:19,23,24,25,51:53, 56,57];
+%                                chang='LeftParietal';
+%                                colis = 'b';
+%                            case 5
+%                                selectchans=[20:22,25:27,53:55,58,59];
+%                                chang='RightParietal';
+%                                colis = [0 0 .5];
+%                            case 6
+%                                selectchans=[60:64, 28:32];
+%                                chang='Occipital';
+%                                colis='m';
+%                                
+%                        end
+%                            
+%                    
+%                    %if restricting the channels for comparison
+%                    d1=d1all(:,selectchans,:);
+%                    d2=d2all(:,selectchans,:);
+%                    
+%                    
+%                    % normalize by within channel SNR if necessary.
+%                     if normEEGcorr==1;
+%                         for id=1:2
+%                             switch id
+%                                 case 1
+%                                     dPLOT=d1;
+%                                 case 2
+%                                     dPLOT=d2;
+%                             end
+%                                 dPLOTtmp=zeros(size(dPLOT));
+%                 
+%                                 for ippant=1:size(dPLOT,1)
+%                                     for ichan = 1:size(dPLOT,2)
+%                                         prevsnr=squeeze(dPLOT(ippant,ichan,:));
+%                                         thism=squeeze(mean(dPLOT(ippant,ichan,:)));
+%                                         tmpsub= repmat(thism, [1, size(prevsnr,2)]);
+%                                         dPLOTtmp(ippant,ichan,:) = prevsnr-tmpsub;
+%                                     end
+%                                     
+%                                 end
+%                                 dPLOT=dPLOTtmp;
+%                                 
+%                                 switch id
+%                                     case 1
+%                                         d1=dPLOT;
+%                                     case 2
+%                                         d2=dPLOT;
+%                                 end
+%                         end
+%                     placesig=.33; % for placing results of ttests on figure
+% 
+%                     else
+%                         placesig=.66; % for placing results of ttests on figure
+%                     end
+%             
+%                    
+%                    
+%                    
+%                    
+%                    
+%                    for ipl=1:3 % SNR then correlation
+%                        placeis = iPFIdir + 2*(ipl -1);
+%                        
+%                        subplot(3,2,placeis);
+%                        
+%                        hold on
+%                        switch ipl
+%                            case 1
+%                                datapl =squeeze(mean(d1,2)); %mean over chanss
+%                                tis = '1f raw SNR';
+%                            case 2
+%                                datapl =squeeze(mean(d2,2)); %mean over chans
+%                                tis = '2f raw SNR';
+%                            case 3
+%                                tis = '1f vs 2f [r]';
+%                        
+%                                corr_time = zeros(size(d1,1), size(d1,3));
+%                                p_time = zeros(size(d1,1), size(d1,3));
+%                                % per ppant, calculate corr over time
+%                                for ippant = 1:size(d1,1)
+%                                    for itime= 1:size(d1,3)
+%                                        
+%                                        %                              scatter(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
+%                                        [r,p]= corr(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
+%                                        corr_time(ippant,itime)=r;
+%                                        p_time(ippant,itime)=r;
+%                                    end
+%                                    
+%                                end
+%                                
+%                                datapl= corr_time;
+%                                
+%                        end
+%                        %within subj error bars
+%                        
+%                        
+%                        %adjust standard error as per COusineau(2005)
+%                        %confidence interval for within subj designs.
+%                        % y = x - mXsub + mXGroup,
+%                        x = datapl;
+%                        
+%                        mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+%                        mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+%                        
+%                        %for each observation, subjtract the subj average, add
+%                        %the group average.
+%                        NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+%                        
+%                        
+%                        corr_time=NEWdata;
+%                        
+%                        
+%                        %                    subplot(1,2,iPFIdir)
+%                        mP= squeeze(mean(corr_time,1));
+%                        
+%                        
+%                        stP = std(corr_time)/sqrt(size(corr_time,1));
+%                        
+%                        
+%                        st=shadedErrorBar(tgrm-3, mP, stP,[],1);
+%                        st.mainLine.Color= colis;
+%                        st.mainLine.LineStyle=linestyle;
+%                        st.mainLine.LineWidth=3;
+%                        st.patch.FaceColor=colis;
+%                        st.edge(1).Color=colis;
+%                        st.edge(2).Color=colis;
+%                        
+%                        leg(changroup)=st.mainLine;
+%                       title(tis)     
+%                       set(gca, 'fontsize', 15)
+%                   axis tight
+%                   xlabel(['Time from reporting'])
+%                   ylabel(tis)
+%                    end
+%                    
+% %                    ylim([-.1 .3])
+% axis tight
+%                   
+%                    legprint=[legprint  {[chang ',n=' num2str(length(selectchans))]}];
+%                    
+%                    
+%                    ylabel(tis)
+%                    if changroup==6;
+%                    legend([leg], legprint);
+%                    end
+%                    
+%                    % store the correlation if that is what we are plotting,
+%                    if ipl==3
+%                    groupedharmonicCorrelations(iPFIdir, :, changroup,:)= datapl;
+%                    
+%                    end
+%                    end
+%                    
+%                    
+%                    
+% %                    xlabel(['Time from ' chis ])
+%                
+% %                    
+%                end
+%                %%
+%                figure(2)
+%                clf
+%                for idir=1:2
+%                    switch idir
+%                        case 1
+%                            linet=':'
+%                        case 2
+%                            linet='-'
+%                    end
+%                            hold on
+%               for igroup=6%:6
+%                   plot(squeeze(nanmean(groupedharmonicCorrelations(idir,:, igroup,:),2)), linet)
+%               end
+%                end
+%                shg
+% %                legend([leg(1) leg(2)], {'target invisible' 'target visible'})
+%                %%
+%                axis tight
+% %                ylim([.475 .675])
+%              %%
+%              cd('Figures')
+%              %%
+%              print('-dpng', 'grouped SNR BG freqs')
+%          end
+%     
          
+    % new job to plot the MDScale distance over time, to compare three at
+    % once (TG, BG, IM).
     
-     
+    if     job2.plotMDSovertime==1;
+        %%
+        cd(basefol)
+        cd('GFX_Pre-RESS')
+        figure(1)
+        clf
+        
+        checkcluster=1;
+        
+        usenormalPFIordownsampled=2; % 1 for normal, 2 for downsample
+        
+        % can plot the mean correlation across subjs (corr1or2=1),
+        %or take the across subj correlation(corr1or2=2).
+        corr1or2=1;
+        
+        selectchans=[1:64]; %use whole head
+        %             selectchans = [23:32,56:64]; % parieto-occipital only
+        
+        peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!
+        
+        
+        for usePFIorCatch=1%1:2
+            
+            if usePFIorCatch==1
+                useD='PFI';
+                falpha = .5;
+            else
+                useD='Catch';
+                falpha = .15;
+                usenormalPFIordownsampled=1;
+            end
+            
+            
+            
+            onsetChans_both=[]; %zeros(2, 16, 64, 14);
+            offsetChans_both=[];% zeros(2, 16, 64, 14);
+            
+            
+            % now that we are using MDS, select all freqs at once
+            
+            hzcompareAll=[1,2,7]; % TG,BG, IM fundamental (index from peakfreqsare)
+            
+            for allhzcombos = 1%
+                hzcounter=1;
+                hzcompare= hzcompareAll(allhzcombos,:);
+                
+                
+                cd(basefol)
+                cd('GFX_Pre-RESS')
+                figure(1)
+                clf
+                
+                
+                for ihz = hzcompare
+                    usehz= peakfreqsare(ihz);
+                    load(['GFX_' useD 'performance_withSNR_' num2str(usehz) '_allchan'])
+                    
+                    if usenormalPFIordownsampled==1
+                        onsetChans_MDSfreq(hzcounter,:,:,:) = storeacrossPpant_onsetSNR_chans;
+                        offsetChans_MDSfreq(hzcounter,:,:,:) = storeacrossPpant_offsetSNR_chans;
+                    else
+                        
+                        onsetChans_MDSfreq(hzcounter,:,:,:,:) = storeacrossPpant_onsetSNR_chans_downsampled;
+                        offsetChans_MDSfreq(hzcounter,:,:,:,:) = storeacrossPpant_offsetSNR_chans_downsampled;
+                        
+                    end
+                    hzcounter=hzcounter+1;
+                end
+                
+                % No longer using 2 freqs only:
+                
+                %     if usenormalPFIordownsampled==1
+                %     onsetChans_20=squeeze(onsetChans_both(1,:,:,:));
+                %     offsetChans_20=squeeze(offsetChans_both(1,:,:,:));
+                %     onsetChans_40=squeeze(onsetChans_both(2,:,:,:));
+                %     offsetChans_40=squeeze(offsetChans_both(2,:,:,:));
+                %     else % extra dimension.
+                %         onsetChans_20=squeeze(onsetChans_both(1,:,:,:,:));
+                %     offsetChans_20=squeeze(offsetChans_both(1,:,:,:,:));
+                %     onsetChans_40=squeeze(onsetChans_both(2,:,:,:,:));
+                %     offsetChans_40=squeeze(offsetChans_both(2,:,:,:,:));
+                %     end
+                %
+                %     figure(1); clf
+                %     leg=[];
+                %     if usenormalPFIordownsampled==1
+                %
+                %         ttestdata= zeros(2, size(onsetChans_20,1),size(onsetChans_20,3));
+                %     else
+                %         ttestdata= zeros(2, size(onsetChans_20,1),size(onsetChans_20,4));
+                %     end
+                %
+                
+                
+                
+                for iPFIdir=1:2%1:2 %onset and offset
+                    hold on
+                    
+                    % specify input data.
+                    switch iPFIdir
+                        case 1
+                            mds_data = onsetChans_MDSfreq;
+                            chis= 'target invisible';
+                            %calculate spatial correlation over time:
+                            colis='r';
+                            linestyle='--';
+                        case 2
+                            mds_data = offsetChans_MDSfreq;
+                            chis= 'target visible';
+                            %                            colis='k';
+                            linestyle='-';
+                    end
+                    
+                    %adjust data size.
+                    if usenormalPFIordownsampled==1
+                        %if restricting the channels for comparison
+                        
+                        mds_data=mds_data(:,:,selectchans,:,:);
+                    else
+                        mds_data=mds_data(:,:,selectchans,:,:);
+                        
+                    end
+                    
+                    % normalize by within channel SNR if necessary.
+%                     if normEEGcorr==1
+%                         if usenormalPFIordownsampled==2
+%                             error('code unfinished')
+%                         end
+%                         
+%                         for id=1:3
+%                             
+%                             dPLOT=squeeze(mds_data(id,:,:,:,:));
+%                             
+%                             
+%                             dPLOTtmp=zeros(size(dPLOT));
+%                             
+%                             for ippant=1:size(dPLOT,1)
+%                                 for ichan = 1:size(dPLOT,2)
+%                                     prevsnr=squeeze(dPLOT(ippant,ichan,:));
+%                                     thism=squeeze(mean(dPLOT(ippant,ichan,:)));
+%                                     tmpsub= repmat(thism, [1, size(prevsnr,2)]);
+%                                     dPLOTtmp(ippant,ichan,:) = prevsnr-tmpsub;
+%                                 end
+%                                 
+%                             end
+%                             dPLOT=dPLOTtmp;
+%                             
+%                             switch id
+%                                 case 1
+%                                     d1=dPLOT;
+%                                 case 2
+%                                     d2=dPLOT;
+%                             end
+%                         end
+%                         placesig=.33; % for placing results of ttests on figure
+%                         
+%                     else
+%                         placesig=.66; % for placing results of ttests on figure
+%                     end
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    if  corr1or2==1
+                        % corr 1  = correlation across channels (within
+                        % subject).
+                        
+                        if usenormalPFIordownsampled==1 % otherwise adjust for extra dimension, and plot across shuffles
+                            corr_time = zeros(size(d1,1), size(d1,3));
+                            p_time = zeros(size(d1,1), size(d1,3));
+                            % per ppant, calculate corr over time
+                            for ippant = 1:size(d1,1)
+                                for itime= 1:size(d1,3)
+                                    
+                                    %                              scatter(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
+                                    [r,p]= corr(squeeze(d1(ippant,:,itime))', squeeze(d2(ippant,:,itime))');
+                                    corr_time(ippant,itime)=r;
+                                    p_time(ippant,itime)=r;
+                                end
+                                
+                            end
+                            
+                            
+                            %within subj error bars
+                            
+                            
+                            %adjust standard error as per COusineau(2005)
+                            %confidence interval for within subj designs.
+                            % y = x - mXsub + mXGroup,
+                            x = corr_time;
+                            
+                            mXppant =squeeze( mean(x,2)); %mean across conditions we are comparing (within ppant ie. time points).
+                            mXgroup = mean(mean(mXppant)); %mean overall (remove b/w sub differences
+                            
+                            %for each observation, subjtract the subj average, add
+                            %the group average.
+                            NEWdata = x - repmat(mXppant, 1, size(x,2)) + repmat(mXgroup, size(x,1),size(x,2));
+                            
+                            
+                            corr_time=NEWdata;
+                            
+                            
+                            %                    subplot(1,2,iPFIdir)
+                            mP= squeeze(mean(corr_time,1));
+                            
+                            
+                            stP = std(corr_time)/sqrt(size(corr_time,1));
+                            
+                            
+                            
+                        else % we are plotting median and shuffled CI.
+                            
+                            % we want the distance matrix at certain points
+                            % in time.
+                            
+                            %first we need to reduce the 64 channel data
+                            %into a correlation matrix.
+                            
+                            %preallocate distance matrices.
+                            corr_time_tmp = zeros(3,3,size(mds_data,2), size(mds_data,4), size(mds_data,5));
+                            
+                            
+                            % per ppant, calculate corrmatrix over time
+                            for ippant = 1:size(mds_data,2)
+                                for ishuff=1:size(mds_data,4)
+                                    for itime= 1:size(mds_data,5)
+                                        
+                                        
+                                        [r,p]= corr(squeeze(mds_data(:,ippant,:,ishuff,itime))');
+                                        corr_time_tmp(:,:,ippant,ishuff,itime)=r;
+                                        %
+                                    end
+                                end
+                                
+                            end
+                            
+                            %now we have our 3x3 dist matrix.
+                            
+                            %within subj error bars
+                            %% sanity check of distribution at each time point:
+                            %                        figure(2); clf
+                            %                        for it=1:size(corr_time,3)
+                            %
+                            %                            subplot(6,6,it);
+                            %                            histogram(squeeze(corr_time(3,:,it)));
+                            %                            title([num2str(tgrm(it)-3) 's'])
+                            %                            xlabel('Pearson r ')
+                            %                        end
+                            
+                            %% take mean over shuffles (downsampled distribution)
+                            corr_time=squeeze(mean(corr_time_tmp,4));
+                            
+                            %now we have 3way correlation matrix over
+                            %participants and time points.
+                            
+                            %convert to 2 dimensional scale
+                            mds_scale_across=zeros(3,2,size(corr_time,3), size(corr_time,4));
+                            
+                            for ippant = 1:size(corr_time,3)
+                                for itime_mds=1:size(corr_time,4)
+                                    
+                                    p_corrDIST=squeeze(corr_time(:,:,ippant, itime_mds));
+                                    
+                                    [Y,~]= cmdscale(abs(p_corrDIST));
+                                    
+                                    mds_scale_across(:,:, ippant, itime_mds) = Y;
+                                end
+                            end
+                            %
+                            %take mean over ppants
+                            mds_scale_final = squeeze(mean(mds_scale_across,3));
+                            
+                            %plot at each time point:
+                            %%
+                            figure(1); clf
+                            hold on
+                            Freqsprint={'TG', 'BG', 'IM'};
+                            for itime_mds = 1:size(mds_scale_final, 3);
+                                
+                                subplot(3,5,itime_mds)
+                                Y= squeeze(mds_scale_final(:,:,itime_mds));
+                                
+                                plot(Y(:,1), Y(:,2), '*-')
+                                % comet(Y(:,1), Y(:,2))
+                                text(Y(:,1)-.01, Y(:,2)+.01, Freqsprint(1:3), 'fontsize', 15);
+                                title([num2str(tgrm(itime_mds)-3) 'secs'])
+                                ylim([-.5 .5])
+                                xlim([-.5 .5])
+                            end
+                            %%
+                            
+                        end
+                        
+                        
+                        %                legend([leg(1) leg(2)], {'target invisible' 'target visible'})
+                        %
+                        figure(1);
+                        yl=get(gca, 'ylim');
+                        %extend by 10% (keeps sig points in relative space).
+                        dyl=diff(yl)*.1;
+                        ylim([yl(1)-dyl yl(2)+dyl])
+                        hold on;
+                        plot([0 0 ], ylim, 'k--')
+                        
+                        xlim([-1.75 1.75])
+                        %
+                        cd(basefol)
+                        cd ../
+                        cd('Figures')
+                        %
+                        cd('GFX spatial correlations')
+                        %
+                        %     title(['During ' useD ])
+                        print('-dpng', ['SpatialCorrelation freqs ' num2str(peakfreqsare(hzcompare(1))) ' ' num2str(peakfreqsare(hzcompare(2))) ' ' useD])
+                        
+                    end % Hz combos.
+                end % PFI or Catch?
+                p_corrDIST = corr(mtopos');
+                %         %visualize distances
+                %         [Y,~]= cmdscale(abs(p_corrDIST));
+                %
+                %
+                %         plot(Y(:,1), Y(:,2), '*')
+                %         text(Y(:,1)-.1, Y(:,2)+.2, Xmodsprint(1:3), 'fontsize', 25);
+                %         set(gcf, 'color', 'w')
+                %         set(gca, 'fontsize', 20)
+                %         title(['MDS for topoplots at ' Hzprint{ihz}], 'fontsize', 25)
+                
+            end
+        end
+    end
 % end
