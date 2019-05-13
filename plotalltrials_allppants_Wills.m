@@ -1,6 +1,8 @@
 dbstop if error
 %plot all trials all ppants for easy quick reference and sanity checks.
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+% try cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+% catch cd('/Users/MatthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+% end
 
 load('MD_AllBP_perppant.mat')
 load('Catchperformance.mat', 'catchStruct')
