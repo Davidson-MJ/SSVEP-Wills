@@ -1,4 +1,4 @@
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/MDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 load('Raw_Behavioral_AllPP.mat', 'AllTrialsAllPPBottomLeft'); 
 %%
 targX=[];
@@ -27,13 +27,14 @@ pix = targX(ippant); %pixel width of TGs.
 
 TGdva(ippant)=pix2angle(display,pix);
 end
-
-hg=histogram(TGdva, ceil(nppants/2));
+%%
+hg=histogram(round(TGdva,2), 25);
 hg.FaceColor = 'b';
-xlabel({['Calibrated target eccentricity'];['from center (d.v.a.)']});
-ylabel('Participant count')
+xlabel({['Calibrated target eccentricity (d.v.a.)']});
+ylabel('# participants')
 set(gcf, 'color', 'w');
-set(gca, 'fontsize', 25);
+%
+set(gca, 'fontsize', 25, 'Xminortick', 'on','xtick', 3:.5:7);
 shg
 %%
 cd ../Figures

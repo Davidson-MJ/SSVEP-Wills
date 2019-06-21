@@ -1,8 +1,8 @@
 dbstop if error
 %plot all trials all ppants for easy quick reference and sanity checks.
-% try cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
-% catch cd('/Users/MatthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
-% end
+try cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+catch cd('/Users/Mdavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+end
 
 load('MD_AllBP_perppant.mat')
 load('Catchperformance.mat', 'catchStruct')
@@ -20,18 +20,18 @@ dbstop if error
 catchcol= 'r';
 
 %
-useshuffled=0
+useshuffled=0;
  
 %
 xt=0:1/60:60;
 dbstop if error
-for ippant = 4%:29
+for ippant = 1:29
     % check all trials
     
     figure(1); clf
     
-    for itrial=13%:24
-%         subplot(8,3, itrial)
+    for itrial=1:24
+        subplot(8,3, itrial)
         
 %         colormap('Gray(4)')
 %         colormap('Viridis')
