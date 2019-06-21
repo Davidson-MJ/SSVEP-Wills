@@ -7,8 +7,9 @@
 %%%%%%%%
 %%%%%%%%
 
-clear all; close all; clc;
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+clear all;  clc;
+% cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 basedir=pwd;
 dbstop if error
 %%
@@ -39,9 +40,9 @@ job.calcPFIdataperFreqandLoc=0; %resaves into PFI_only with new fields in struct
 
 job.concatPFIacrossPpants_num=0;
 job.concatPFIacrossPpants_byLoc=0;
-job.createShufflePFIdata_pernum=1; % now with nshuff=1000
-job.calcPFIdataperNum_shuffled=1;
-job.concatPFIacrossPpants_num_shuffled=1;
+job.createShufflePFIdata_pernum=0; % now with nshuff=1000
+job.calcPFIdataperNum_shuffled=0;
+job.concatPFIacrossPpants_num_shuffled=0;
 %
 
 job.concatPFIacrossPpants_slope_nulldistribution=0;
@@ -62,7 +63,7 @@ job.LMEnPFIwShuff=0;
 job.plotBehaviouraldata=0;
 
 % plot these together:
-job.plotBehaviouraldata_num_with_shuffled=0;
+job.plotBehaviouraldata_num_with_shuffled=1;
 
 job.compareSlopesofShuffledvsObserveddata=0;
 
@@ -83,7 +84,7 @@ job.RMANOVA_PFI_byNum_vs_shuffled=0;
 
 
 nppants=19;
-excludeTransientlength = 30; %minimum frames for counted PFI. (Fs=60),
+excludeTransientlength = 0; %minimum frames for counted PFI. (Fs=60),
 
 %%
 if job.removeCatchperiodsfromBPtrace==1
@@ -1496,6 +1497,8 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             end
             %
             %%
+            %remove real for ASSC
+%             mData(:,1) = nan; 
             bh=bar(mData);
             bh(1).FaceColor= ['b'];
             bh(2).FaceColor= [.5 .5 .5];
