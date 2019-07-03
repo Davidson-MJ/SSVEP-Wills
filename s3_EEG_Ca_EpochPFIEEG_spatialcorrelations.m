@@ -1,7 +1,7 @@
 
 clear all
-addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
+% addpath('/Users/MDavidson/Desktop/SSVEP-feedbackpro')
+cd('/Users/MDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
 basefol=pwd;
 %%
 pdirs = dir([pwd filesep '*_*' 'EEG']);
@@ -627,7 +627,7 @@ if  job2.plotSpatialCorrelation_overtime==1
      peakfreqsare=[15,20,30, 40, 45, 60, 5, 25, 35 ]; % don't change!        
 
    
-for usePFIorCatch=2%1:2
+for usePFIorCatch=1%1:2
     
     if usePFIorCatch==1
             useD='PFI';
@@ -655,7 +655,7 @@ for usePFIorCatch=2%1:2
              % completed for hz 1,2,7. 
 
              
-    for allhzcombos = [1,4,7] % these are the comparisons for tg,bg, and im.  (see above)
+    for allhzcombos = 4%[1,4,7] % these are the comparisons for tg,bg, and im.  (see above)
     hzcounter=1;
     hzcompare= hzcompareAll(allhzcombos,:);
     
@@ -707,7 +707,7 @@ for usePFIorCatch=2%1:2
     
     
     
-    for iPFIdir=1:2%1:2 %onset and offset
+    for iPFIdir=1%:2%1:2 %onset and offset
         hold on
         switch iPFIdir
             case 1
@@ -715,7 +715,7 @@ for usePFIorCatch=2%1:2
                 d2=onsetChans_40;
                 chis= 'target invisible';
                 %calculate spatial correlation over time:
-                colis='r';
+                colis=[0 .5 0];
                 linestyle='--';
                 
                 if usePFIorCatch==1
