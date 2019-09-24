@@ -33,7 +33,7 @@ job.plot_dynSSEP_acrossppants=0;
 job.erpimagePpantlevel=0; %using dynRESS SSVEP or SNR
 job.concaterpdataacrossppants=0; % concat above
 job.erpimageacrossppants=0;
-job.gradedchangesinERPimage_PFI=0;
+job.gradedchangesinERPimage_PFI=1;
 
 
 % also tr x tr of catch responses.
@@ -49,7 +49,7 @@ job.gradedchangesinERPimage_Catch=0;
 job.BPandSSVEPtimecourseacrossppants_group=0; %same format as previous script (epoch PFI etc.)
 job.BPandSSVEPtimecourseacrossppants_group_CATCH=0; %same format as previous script (epoch PFI etc.)
 
-job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH=1; %same format as previous script (epoch PFI etc.)
+job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH=0; %same format as previous script (epoch PFI etc.)
 
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
@@ -1942,7 +1942,7 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
          hzlabel={'f1', 'f2', '2f1', '2f2', '3f1', '3f2*', 'f2-f1'};
          
          
-    for hzis=5:6%[1, 2, 7]
+    for hzis=1%:6%[1, 2, 7]
         cd(basefol)
         cd('EEG')
         cd('GFX_EEG-RESS')
@@ -1972,7 +1972,7 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
 %         tgrm = timeidDYN;
         %%
-        for itimezero=2%:2
+        for itimezero=1%:2
             
             
             switch itimezero

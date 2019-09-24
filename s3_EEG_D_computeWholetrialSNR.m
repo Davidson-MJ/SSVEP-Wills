@@ -1,8 +1,13 @@
 % s3_B_rereferenceEEG
 %new rereference script.
 clear all
-addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
+
+
+try cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
+catch
+    cd('/Users/MDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
+end
+
 basefol=pwd;
 %%
 pdirs = dir([pwd filesep '*_*' 'EEG']);

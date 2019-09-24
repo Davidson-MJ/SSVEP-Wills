@@ -35,7 +35,7 @@ fontsize=25;
 %ippant=3, itrial = 2 in the paper
 %also load the example SNR.
 useshuffled=0;
-for ippant=2%allppants(15)
+for ippant=9%allppants(15)
     
     cd(basefol)
     cd('EEG')    
@@ -43,18 +43,18 @@ for ippant=2%allppants(15)
     cd(pdirs(ippant).name)
     
     load('P_wholetrialRESS'); %
-    cd('/Users/MattDavidson/Desktop')
-    cd('ppant trial-SNR correlation')
+%     cd('/Users/mdavidson/Desktop')
+%     cd('ppant trial-SNR correlation')
     %%
-    for    itrial=12%:24%
+    for    itrial=18;%12%:24%
         
         figure(1); clf
-        subplot(311)
+%         subplot(311)
         
         hold on;
         colormap('jet')
-        cmap = [ .9 .9 .9; 0 .9 0 ];
-%         cmap = [ .9 .9 .9; 0 .9 0 ; 0 .6 0; 0 .3 0; 0 .1 0];
+        cmap = [ .9 .9 .9; 0  0 1 ]; % grey + blue
+
         colormap(cmap)
         plotall = zeros(5,3600);
         if useshuffled==1
@@ -63,12 +63,12 @@ for ippant=2%allppants(15)
             plottmp=ppantTrialDatawithDetails(ippant).AllBPData;
             plot1=squeeze(plottmp(itrial,:,:));
             plott=sum(plot1,1);
-plotall(1:4,:) = plot1;
+% plotall(1:4,:) = plot1;
 % plotall(5,:) = plott;
 %             plotall=plott;
         end
         
-        imagesc(xt, 1:1:size(plotall,1), plotall);
+        imagesc(xt, 1:1:size(plot1,1), plot1);
      
         set(gca, 'yticklabel', [])
         % set(gca, 'yticklabel', yt)
@@ -91,7 +91,7 @@ plotall(1:4,:) = plot1;
                 ppantTrialDatawithDetails(ippant).TrialDetails(itrial).BR_Catch];
             
         % ylabel('Button Press location');
-        xlabel('Time(s)')
+        xlabel('Time (sec)')
         catchexist=0; % unless plotted below.
         try
         if useshuffled==0
@@ -152,7 +152,7 @@ plotall(1:4,:) = plot1;
         %%
         % end
         set(gcf, 'color', 'w')
-                title(['Participant ' num2str(ippant) ', trial ' num2str(itrial)])
+%                 title(['Participant ' num2str(ippant) ', trial ' num2str(itrial)])
 
         hold on;
 %         ylim([0 8])

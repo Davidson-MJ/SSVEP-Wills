@@ -60,7 +60,7 @@ job.LMEnPFIwShuff=0;
 
 
 %plot the results for PFI, in separate bar graphs.
-job.plotBehaviouraldata=0;
+job.plotBehaviouraldata=1;
 
 % plot these together:
 job.plotBehaviouraldata_num_with_shuffled=1;
@@ -1260,16 +1260,16 @@ if job.plotBehaviouraldata ==1
                 p1= Freq_NumPFI_acrossTrials;
                 p2= mDurperNumPFI_acrossTrials;
                 p3= totalDurperNumPFI_acrossTrials;
-                xlabelis = 'Number of targets absent';
+                xlabelis = 'nPFI';
                 xticks = [{'1'} {'2'}, {'3'}];
-                     xticks = [{'1'} {'2'}, {'3'}];
+                     xticks = [{'0'},{'1'} {'2'}, {'3'}, {'4'}];
         end
 
-        for iDV=1:3
+        for iDV=1:2
             %take mean within, then across ppants.
             %within
             
-            subplot(1,3,icounter)
+            subplot(1,2,icounter)
             switch iDV
                 
                 case 1
@@ -1309,6 +1309,7 @@ if job.plotBehaviouraldata ==1
             %compute stErr %which version?
             stErr = std(NEWdata)/sqrt(size(datanow,1));
             
+            stErr_o = std(x)/sqrt(size(datanow,1)); % original
             %
             if iIV~=2
             bh=bar(mData);
@@ -1334,12 +1335,12 @@ if job.plotBehaviouraldata ==1
                 errorbar(xis,mData,stErr, 'LineStyle', ['none'],'Color', 'k','linewidth', 2 )
                 
                 
-            axis('tight')
+            axis('square')
             switch iDV
                 case 1
                     ylabel([yis]);
 %                     if iIV==1
-                    ylimsa=[0 8];
+                    ylimsa=[0 9];
 %                     else
 %                         ylimsa=[0 5];
 %                     end
@@ -1360,16 +1361,16 @@ if job.plotBehaviouraldata ==1
                     
 
             end
-            axis tight
+%             axis tight
             ylim([ylimsa])
-            
+%             xlabel(xlabelis)
             if iIV==2
                 xlim([.5 2.5])
                 legend('Top', 'Bottom ')
             end
             
             
-            set(gca, 'xticklabel', xticks)
+            set(gca, 'xticklabel', xticks, 'ytick', 0:2:ylimsa(end))
             set(gca, 'fontsize', fontsize-2)
            icounter=icounter+1; 
         end
