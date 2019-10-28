@@ -33,7 +33,7 @@ job.plot_dynSSEP_acrossppants=0;
 job.erpimagePpantlevel=0; %using dynRESS SSVEP or SNR
 job.concaterpdataacrossppants=0; % concat above
 job.erpimageacrossppants=0;
-job.gradedchangesinERPimage_PFI=1;
+job.gradedchangesinERPimage_PFI=0;
 
 
 % also tr x tr of catch responses.
@@ -49,7 +49,7 @@ job.gradedchangesinERPimage_Catch=0;
 job.BPandSSVEPtimecourseacrossppants_group=0; %same format as previous script (epoch PFI etc.)
 job.BPandSSVEPtimecourseacrossppants_group_CATCH=0; %same format as previous script (epoch PFI etc.)
 
-job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH=0; %same format as previous script (epoch PFI etc.)
+job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH=1; %same format as previous script (epoch PFI etc.)
 
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
@@ -3666,7 +3666,7 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
 %     clf
     
     rmvbase=0;
-    checksigON=1;
+    checksigON=0;
     checkcluster=1;
     
 %     clf
@@ -3685,7 +3685,7 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
 %     clf
 figure(1); hold on;
 clearvars yl;
-    for hzis=7%[1,2]%[1,2]%
+    for hzis=2%[1,2]%[1,2]%
         usehz=peakfreqsare(hzis);
         
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
@@ -4409,7 +4409,7 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
     clf
     rmvbase=0; % normalize
     checksigON=0; % check sigs between directions
-    checkcluster=1; % clusters only
+    checkcluster=0; % clusters only
     
 
     collectBarwindow = [0, 1]; % seconds to collect SNR difference between disappearance/reappearance.
@@ -4443,9 +4443,9 @@ clearvars yl;
 
 barcounter=1;
 %%
-for hzis=7%:7% need all 7 for bar data.
+for hzis=1%:7% need all 7 for bar data.
     clf
-    for idtype=2%1:2
+    for idtype=1%1:2
         switch idtype
             case 1
                 useD= 'PFI';
@@ -4482,7 +4482,7 @@ for hzis=7%:7% need all 7 for bar data.
         %         legendprint=[];
         
         diffTEMP = []; % we want the difference between disap/reap for each iteration.
-        for itimezero=1%:2%1%:2%1:2
+        for itimezero=1:2%1%:2%1:2
             
             switch itimezero
                 case 1
