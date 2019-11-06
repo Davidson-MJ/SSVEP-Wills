@@ -3666,7 +3666,7 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
 %     clf
     
     rmvbase=0;
-    checksigON=0;
+    checksigON=1;
     checkcluster=1;
     
 %     clf
@@ -4408,8 +4408,8 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 
     clf
     rmvbase=0; % normalize
-    checksigON=0; % check sigs between directions
-    checkcluster=0; % clusters only
+    checksigON=1; % check sigs between directions
+    checkcluster=1; % clusters only
     
 
     collectBarwindow = [0, 1]; % seconds to collect SNR difference between disappearance/reappearance.
@@ -4430,6 +4430,7 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
     %     cd('newplots-MD')
     colsare={'b' , 'k','b','k','b','g','m'}; % blue for tg, black for BG.
     hzare={'TG (f1)' , 'BG (f2)','TG (2f1)','BG (2f2)','TG (3f1)','TGBG','IM (f2-f1)'}; % blue for tg, black for BG.
+    hzare={'Target (f1)' , 'Backgroud (f2)','TG (2f1)','BG (2f2)','TG (3f1)','TGBG','IM (f2-f1)'}; % blue for tg, black for BG.
     linetypes={'--', '-', [],[],'--'};
     legendis=[];
     lgc=1;
@@ -4437,7 +4438,7 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 figure(1); hold on;
 clearvars yl;
 
-
+lsh=[];
 % per frequency, plot both the PFI data AND then CATCH data, and produce
 % barchart output.
 
@@ -4494,7 +4495,7 @@ for hzis=1%:7% need all 7 for bar data.
                         useSNR = squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
                     end
                     
-                    chtype='target invisible';                    
+                    chtype='button press/release';                    
                     linet='--';
                     
                     % new marker types:
@@ -4511,7 +4512,7 @@ for hzis=1%:7% need all 7 for bar data.
                         %BPcatch offset = dim 4
                     useSNR = squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
                     end
-                    chtype='target visible';
+                    chtype='button press/release';
                                        
                     linet='-';
                     markert='none';
@@ -4570,7 +4571,10 @@ for hzis=1%:7% need all 7 for bar data.
             %
             sh.mainLine.Marker = markert;
             sh.mainLine.MarkerSize=25;
-            xlabel(['Time from subjective report [s]'])%
+            
+            lsh(itimezero) = sh.mainLine;
+            
+            xlabel(['Time from ' chtype])%
             
             
             if itimezero==3
@@ -4581,6 +4585,7 @@ for hzis=1%:7% need all 7 for bar data.
                 
                 if rmvbase~=1
                     ylabel({['RESS log(SNR), ' hzp]})
+                    ylabel({['RESS log(SNR)']})
                 else
                     ylabel({['mean subtracted'];['RESS log(SNR)']})
                 end
@@ -4821,10 +4826,12 @@ for hzis=1%:7% need all 7 for bar data.
                         
                         figure(1);
                         if icl==1
+                            axis tight;
                         yl=get(gca, 'ylim');
                         end
                         if idtype==1 % place sig markers at top of figure for PFI
-                            sigplace = yl(2)+.7*(diff(yl));
+%                             sigplace = yl(2)+.7*(diff(yl));
+                        sigplace = yl(2)+.02;
                         else
                             sigplace = yl(1)-.2*(diff(yl)); % place at bottom for catch
                         end
@@ -4847,8 +4854,10 @@ for hzis=1%:7% need all 7 for bar data.
             %% adjust ylims.
             yl=get(gca, 'ylim');
             %extend by 10% (keeps sig points in relative space).
-            dyl=diff(yl)*.1;
-            ylim([yl(1)-dyl yl(2)+dyl])
+%             dyl=diff(yl)*.2;
+%             ylim([yl(1)-dyl yl(2)+dyl])
+%             ylim([yl(1)-.05 yl(2)+.08])
+            ylim([yl(1)-.05 yl(2)+.06]) % f1
             
         end
         
@@ -4857,16 +4866,25 @@ for hzis=1%:7% need all 7 for bar data.
     end % PFI vs Catch
     
     hold on 
-    plot([0 0 ], ylim, ['k-']);
+    
 % print per FREQ.        
         cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
 %     print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
-    print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
+%     print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
 %     print('-d
         
-    end
+end
+    %%
+ set(gcf, 'Position',[-1320,219,637,564])
+ plot([0 0 ], ylim, ['k-']);   
+ lg=legend([lsh(1), lsh(2)], [{'PFI'}, {'Reappearance'}]);
     
+    set(lg, 'Location', 'NorthEast');
+    
+    
+    %%
+              
     %% after all HZ, plot the bar data.
     % dims are = 15 pfi, 15 catch, 20 pfi, 20 catch, 5pfi 5 catch)
     barax = [{'Target (f1), during PFI'}, {'Target (f1), during Catch'}, {'Background (f2), during PFI'}, {'Background (f2), during Catch'}, {'IM (f2-f1), during PFI'}, {'IM (f2-f1), during Catch'}]; 

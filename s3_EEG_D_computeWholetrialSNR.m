@@ -15,7 +15,7 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
 % allppants=[1,2,4,6,9:16,18]; %
  allppants=[1,2,4,6,7,9:19]; %
 
-job.crunchacrossppants=0; %saves also within participant folders.
+job.crunchacrossppants=1; %saves also within participant folders.
 job.plotacrossppants=1;
 
 
@@ -27,7 +27,7 @@ params.tapers=[1 1];
 % params.fpass=[0 100];
 % params.fpass=[0 55];
 
-acrossPPSNR=zeros(length(allppants), 64, 8193);
+[acrossPPSPEC,acrossPPSNR]=deal(zeros(length(allppants), 64, 8193));
 % acrossPPSNR=zeros(length(allppants), 64, 3605);
 counter=1;
 for ippant = 1:length(allppants)
@@ -38,38 +38,44 @@ for ippant = 1:length(allppants)
     
     pSNR= zeros(64,8193);
 %     pSNR= zeros(64,3605);
+      pSPEC=pSNR;
     for ichan = 1:64
         chdata = squeeze(EEG_preprocd(ichan,:,:));
         
         [s,f]= mtspectrumc(chdata, params);
+%         ls=log(s);
+        pSPEC(ichan,:) = squeeze(nanmean(log(s),2));
         
-        kernelw = [-1/8 -1/8 -1/8 -1/8 0 0 0 0 0 1  0 0 0 0 0 -1/8 -1/8 -1/8 -1/8];
-        
-        stmp=zeros(size(s));
-        
-        for itrial = 1:size(s,2)
-%             subplot(311)
-%             plot(f,s(:,itrial));
-%             subplot(312)
-%             plot(f,log(s(:,itrial)));
-%             subplot(313)
-            snr=conv(log(s(:,itrial))', kernelw, 'same');
-%             plot(f,snr)
-            
-            stmp(:,itrial) = snr;
-        end
-        
-        %take average
-        pSNR(ichan,:) = nanmean(stmp,2);
+%% or take SNR         
+%         kernelw = [-1/8 -1/8 -1/8 -1/8 0 0 0 0 0 1  0 0 0 0 0 -1/8 -1/8 -1/8 -1/8];
+%         
+%         stmp=zeros(size(s));
+%         
+%         for itrial = 1:size(s,2)
+% %             subplot(311)
+% %             plot(f,s(:,itrial));
+% %             subplot(312)
+% %             plot(f,log(s(:,itrial)));
+% %             subplot(313)
+%             snr=conv(log(s(:,itrial))', kernelw, 'same');
+% %             plot(f,snr)
+%             
+%             stmp(:,itrial) = snr;
+%         end
+%         
+%         %take average
+%         pSNR(ichan,:) = nanmean(stmp,2);
     end
     
-    save('WholetrialmSNR_chanXfreq', 'pSNR', 'f')
+    save('WholetrialmSNR_chanXfreq', 'pSPEC', '-append')
     
-    acrossPPSNR(counter,:,:)=pSNR;
+    acrossPPSPEC(counter,:,:)=pSPEC;
+%     acrossPPSNR(counter,:,:)=pSNR;
     counter=counter+1;
 end
 cd(basefol)
-save('GFX_rawSNR_static_wholetrial', 'acrossPPSNR', 'f')
+% save('GFX_rawSNR_static_wholetrial', 'acrossPPSNR', 'f')
+save('GFX_rawSNR_static_wholetrial', 'acrossPPSPEC', '-append')
 
 end
 if job.plotacrossppants==1

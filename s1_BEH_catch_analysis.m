@@ -5,7 +5,7 @@
 %MD July 18.
 clear all
 dbstop if error
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/MDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 basefol=pwd;
 load('Raw_Behavioral_AllPP.mat')
 %%
@@ -29,7 +29,7 @@ job.calcNEWShuffledCatchOnsetBPProb=0; %!  ! ! ! new ver MD # 04/18.
 
 job.calcMissedcatchesbyTargperppant=0; % this appends to Catch Struct -> highlights those potentially missed catches in the all trials plots.
 
-job.plotCatchtracesbynumTargets_eachppant=1;  % also plots overall RTs to catch onset/offset.
+job.plotCatchtracesbynumTargets_eachppant=0;  % also plots overall RTs to catch onset/offset.
 job.plotCatchtracesbynumTargets=1; % not really by num targets, plots vs shuffled.
 
 
