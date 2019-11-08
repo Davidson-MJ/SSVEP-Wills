@@ -7,8 +7,8 @@
 clear all
 % close all
 
-addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
+% addpath('/Users/MatthewDavidson/Desktop/SSVEP-Wills')
+cd('/Users/MatthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
 
 
 basefol=pwd;
@@ -562,7 +562,7 @@ if job.plot_dynSSEP_acrossppants==1
     % ThiS SNR is average across subjects    
     load('GFX_ressSNR_Dynamic.mat');
     
-    useTRADorDYNSNR = 1; % plot traditional or dynamic SNR after RESS.
+    useTRADorDYNSNR = 2; % plot traditional or dynamic SNR after RESS.
     
     
     
@@ -615,7 +615,7 @@ legendPRINT={};
 
           counter=1;
           
-          itypech=[3,7]%[1,2]; %used for indexing ttests
+          itypech=[1,2]%[1,2]; %used for indexing ttests
           
           for itype=itypech
                 
@@ -1778,7 +1778,7 @@ if job.erpimageacrossppants==1
             %         [sortedRTs, cid] = sort(acrRTs, 'descend');
             
             %
-            imagesc([-3:1/60:3], 1:size(acrBP,1), acrBP);%(cid,:));
+            imagesc(-3:1/60:3, 1:size(acrBP,1), acrBP);%(cid,:));
             %
             title({['Buttons Pressed'] }, 'fontsize', 20)
             c=colorbar;
@@ -4859,7 +4859,7 @@ for hzis=1:7% need all 7 for bar data.
     hold on 
     plot([0 0 ], ylim, ['k-']);
 % print per FREQ.        
-        cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
+%         cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
 %     print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
     print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
