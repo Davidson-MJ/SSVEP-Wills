@@ -37,6 +37,13 @@ ylabel('Participant count')
 set(gcf, 'color', 'w');
 set(gca, 'fontsize', 25);
 xlim([2.9 6])
+hg=histogram(round(TGdva,2), 25);
+hg.FaceColor = 'b';
+xlabel({['Calibrated target eccentricity (d.v.a.)']});
+ylabel('# participants')
+set(gcf, 'color', 'w');
+%
+set(gca, 'fontsize', 25, 'Xminortick', 'on','xtick', 3:.5:7);
 shg
 %%
 cd ../Figures

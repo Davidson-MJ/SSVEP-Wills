@@ -7,8 +7,13 @@
 clear all
 % close all
 
+<<<<<<< HEAD
 % addpath('/Users/MatthewDavidson/Desktop/SSVEP-Wills')
 cd('/Users/MatthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
+=======
+addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
+cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
+>>>>>>> 6a54e89208b5f18592a2083d6707be74fd50e41d
 
 
 basefol=pwd;
@@ -1942,7 +1947,7 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
          hzlabel={'f1', 'f2', '2f1', '2f2', '3f1', '3f2*', 'f2-f1'};
          
          
-    for hzis=5:6%[1, 2, 7]
+    for hzis=1%:6%[1, 2, 7]
         cd(basefol)
         cd('EEG')
         cd('GFX_EEG-RESS')
@@ -1972,7 +1977,7 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
 %         tgrm = timeidDYN;
         %%
-        for itimezero=2%:2
+        for itimezero=1%:2
             
             
             switch itimezero
@@ -3685,7 +3690,7 @@ if job.BPandSSVEPtimecourseacrossppants_group==1
 %     clf
 figure(1); hold on;
 clearvars yl;
-    for hzis=7%[1,2]%[1,2]%
+    for hzis=2%[1,2]%[1,2]%
         usehz=peakfreqsare(hzis);
         
         load(['GFX_PFIperformance_withSNR_' num2str(usehz) '_min0_RESS'])
@@ -4430,6 +4435,7 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
     %     cd('newplots-MD')
     colsare={'b' , 'k','b','k','b','g','m'}; % blue for tg, black for BG.
     hzare={'TG (f1)' , 'BG (f2)','TG (2f1)','BG (2f2)','TG (3f1)','TGBG','IM (f2-f1)'}; % blue for tg, black for BG.
+    hzare={'Target (f1)' , 'Backgroud (f2)','TG (2f1)','BG (2f2)','TG (3f1)','TGBG','IM (f2-f1)'}; % blue for tg, black for BG.
     linetypes={'--', '-', [],[],'--'};
     legendis=[];
     lgc=1;
@@ -4437,13 +4443,13 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 figure(1); hold on;
 clearvars yl;
 
-
+lsh=[];
 % per frequency, plot both the PFI data AND then CATCH data, and produce
 % barchart output.
 
 barcounter=1;
 %%
-for hzis=1:7% need all 7 for bar data.
+for hzis=1%:7% need all 7 for bar data.
     clf
     for idtype=1%1:2
         switch idtype
@@ -4482,7 +4488,7 @@ for hzis=1:7% need all 7 for bar data.
         %         legendprint=[];
         
         diffTEMP = []; % we want the difference between disap/reap for each iteration.
-        for itimezero=1:2%1:2
+        for itimezero=1:2%1%:2%1:2
             
             switch itimezero
                 case 1
@@ -4494,7 +4500,7 @@ for hzis=1:7% need all 7 for bar data.
                         useSNR = squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
                     end
                     
-                    chtype='target invisible';                    
+                    chtype='button press/release';                    
                     linet='--';
                     
                     % new marker types:
@@ -4511,7 +4517,7 @@ for hzis=1:7% need all 7 for bar data.
                         %BPcatch offset = dim 4
                     useSNR = squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
                     end
-                    chtype='target visible';
+                    chtype='button press/release';
                                        
                     linet='-';
                     markert='none';
@@ -4570,7 +4576,10 @@ for hzis=1:7% need all 7 for bar data.
             %
             sh.mainLine.Marker = markert;
             sh.mainLine.MarkerSize=25;
-            xlabel(['Time from subjective report [s]'])%
+            
+            lsh(itimezero) = sh.mainLine;
+            
+            xlabel(['Time from ' chtype])%
             
             
             if itimezero==3
@@ -4581,6 +4590,7 @@ for hzis=1:7% need all 7 for bar data.
                 
                 if rmvbase~=1
                     ylabel({['RESS log(SNR), ' hzp]})
+                    ylabel({['RESS log(SNR)']})
                 else
                     ylabel({['mean subtracted'];['RESS log(SNR)']})
                 end
@@ -4821,10 +4831,12 @@ for hzis=1:7% need all 7 for bar data.
                         
                         figure(1);
                         if icl==1
+                            axis tight;
                         yl=get(gca, 'ylim');
                         end
                         if idtype==1 % place sig markers at top of figure for PFI
-                            sigplace = yl(2)+.7*(diff(yl));
+%                             sigplace = yl(2)+.7*(diff(yl));
+                        sigplace = yl(2)+.02;
                         else
                             sigplace = yl(1)-.2*(diff(yl)); % place at bottom for catch
                         end
@@ -4847,8 +4859,10 @@ for hzis=1:7% need all 7 for bar data.
             %% adjust ylims.
             yl=get(gca, 'ylim');
             %extend by 10% (keeps sig points in relative space).
-            dyl=diff(yl)*.1;
-            ylim([yl(1)-dyl yl(2)+dyl])
+%             dyl=diff(yl)*.2;
+%             ylim([yl(1)-dyl yl(2)+dyl])
+%             ylim([yl(1)-.05 yl(2)+.08])
+            ylim([yl(1)-.05 yl(2)+.06]) % f1
             
         end
         
@@ -4857,16 +4871,25 @@ for hzis=1:7% need all 7 for bar data.
     end % PFI vs Catch
     
     hold on 
-    plot([0 0 ], ylim, ['k-']);
+    
 % print per FREQ.        
 %         cd([basefol filesep 'Figures' filesep 'GFX PFI SNR time course'])
     %
 %     print('-dpng', ['PFI and Catch COMBINED trace SSVEP summary at ' num2str(usehz) '.png'])
-    print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
+%     print('-dpng', ['PFI only trace SSVEP summary at ' num2str(usehz) '.png'])
 %     print('-d
         
-    end
+end
+    %%
+ set(gcf, 'Position',[-1320,219,637,564])
+ plot([0 0 ], ylim, ['k-']);   
+ lg=legend([lsh(1), lsh(2)], [{'PFI'}, {'Reappearance'}]);
     
+    set(lg, 'Location', 'NorthEast');
+    
+    
+    %%
+              
     %% after all HZ, plot the bar data.
     % dims are = 15 pfi, 15 catch, 20 pfi, 20 catch, 5pfi 5 catch)
     barax = [{'Target (f1), during PFI'}, {'Target (f1), during Catch'}, {'Background (f2), during PFI'}, {'Background (f2), during Catch'}, {'IM (f2-f1), during PFI'}, {'IM (f2-f1), during Catch'}]; 

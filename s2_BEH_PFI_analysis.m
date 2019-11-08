@@ -7,8 +7,9 @@
 %%%%%%%%
 %%%%%%%%
 
-clear all; close all; clc;
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+clear all;  clc;
+% cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 basedir=pwd;
 dbstop if error
 %%
@@ -39,9 +40,9 @@ job.calcPFIdataperFreqandLoc=0; %resaves into PFI_only with new fields in struct
 
 job.concatPFIacrossPpants_num=0;
 job.concatPFIacrossPpants_byLoc=0;
-job.createShufflePFIdata_pernum=1; % now with nshuff=1000
-job.calcPFIdataperNum_shuffled=1;
-job.concatPFIacrossPpants_num_shuffled=1;
+job.createShufflePFIdata_pernum=0; % now with nshuff=1000
+job.calcPFIdataperNum_shuffled=0;
+job.concatPFIacrossPpants_num_shuffled=0;
 %
 
 job.concatPFIacrossPpants_slope_nulldistribution=0;
@@ -59,10 +60,10 @@ job.LMEnPFIwShuff=0;
 
 
 %plot the results for PFI, in separate bar graphs.
-job.plotBehaviouraldata=0;
+job.plotBehaviouraldata=1;
 
 % plot these together:
-job.plotBehaviouraldata_num_with_shuffled=0;
+job.plotBehaviouraldata_num_with_shuffled=1;
 
 job.compareSlopesofShuffledvsObserveddata=0;
 
@@ -83,7 +84,7 @@ job.RMANOVA_PFI_byNum_vs_shuffled=0;
 
 
 nppants=19;
-excludeTransientlength = 30; %minimum frames for counted PFI. (Fs=60),
+excludeTransientlength = 0; %minimum frames for counted PFI. (Fs=60),
 
 %%
 if job.removeCatchperiodsfromBPtrace==1
@@ -1259,16 +1260,16 @@ if job.plotBehaviouraldata ==1
                 p1= Freq_NumPFI_acrossTrials;
                 p2= mDurperNumPFI_acrossTrials;
                 p3= totalDurperNumPFI_acrossTrials;
-                xlabelis = 'Number of targets absent';
+                xlabelis = 'nPFI';
                 xticks = [{'1'} {'2'}, {'3'}];
-                     xticks = [{'1'} {'2'}, {'3'}];
+                     xticks = [{'0'},{'1'} {'2'}, {'3'}, {'4'}];
         end
 
-        for iDV=1:3
+        for iDV=1:2
             %take mean within, then across ppants.
             %within
             
-            subplot(1,3,icounter)
+            subplot(1,2,icounter)
             switch iDV
                 
                 case 1
@@ -1308,6 +1309,7 @@ if job.plotBehaviouraldata ==1
             %compute stErr %which version?
             stErr = std(NEWdata)/sqrt(size(datanow,1));
             
+            stErr_o = std(x)/sqrt(size(datanow,1)); % original
             %
             if iIV~=2
             bh=bar(mData);
@@ -1333,12 +1335,12 @@ if job.plotBehaviouraldata ==1
                 errorbar(xis,mData,stErr, 'LineStyle', ['none'],'Color', 'k','linewidth', 2 )
                 
                 
-            axis('tight')
+            axis('square')
             switch iDV
                 case 1
                     ylabel([yis]);
 %                     if iIV==1
-                    ylimsa=[0 8];
+                    ylimsa=[0 9];
 %                     else
 %                         ylimsa=[0 5];
 %                     end
@@ -1359,16 +1361,16 @@ if job.plotBehaviouraldata ==1
                     
 
             end
-            axis tight
+%             axis tight
             ylim([ylimsa])
-            
+%             xlabel(xlabelis)
             if iIV==2
                 xlim([.5 2.5])
                 legend('Top', 'Bottom ')
             end
             
             
-            set(gca, 'xticklabel', xticks)
+            set(gca, 'xticklabel', xticks, 'ytick', 0:2:ylimsa(end))
             set(gca, 'fontsize', fontsize-2)
            icounter=icounter+1; 
         end
@@ -1496,6 +1498,8 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             end
             %
             %%
+            %remove real for ASSC
+%             mData(:,1) = nan; 
             bh=bar(mData);
             bh(1).FaceColor= ['b'];
             bh(2).FaceColor= [.5 .5 .5];
