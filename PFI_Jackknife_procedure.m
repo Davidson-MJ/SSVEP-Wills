@@ -8,8 +8,8 @@ clear all; close all;
 % copy-paste of BP_SSVEP script (PFI and Catch).
 
 %background dirs
-addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
-cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
+% addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
+cd('/Users/matthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
 
 
 basefol=pwd;

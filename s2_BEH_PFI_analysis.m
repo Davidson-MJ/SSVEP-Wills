@@ -9,7 +9,7 @@
 
 clear all;  clc;
 % cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
-cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/matthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 basedir=pwd;
 dbstop if error
 %%
@@ -60,7 +60,7 @@ job.LMEnPFIwShuff=0;
 
 
 %plot the results for PFI, in separate bar graphs.
-job.plotBehaviouraldata=1;
+job.plotBehaviouraldata=0;
 
 % plot these together:
 job.plotBehaviouraldata_num_with_shuffled=1;
