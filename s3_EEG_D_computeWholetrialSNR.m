@@ -74,6 +74,7 @@ for ippant = 1:length(allppants)
     counter=counter+1;
 end
 cd(basefol)
+cd('GFX_Pre-RESS')
 % save('GFX_rawSNR_static_wholetrial', 'acrossPPSNR', 'f')
 save('GFX_rawSNR_static_wholetrial', 'acrossPPSPEC', '-append')
 
@@ -92,6 +93,7 @@ if job.plotacrossppants==1
     figure(1);
     clf
     mSNRchan=squeeze(mean(acrossPPSNR(:,62,:),1));
+    mSNRchan=squeeze(mean(acrossPPSPEC(:,62,:),1));
     plot(f, mSNRchan, 'k')
     hold on
     cols={'b', 'k', 'b', 'k', 'm','m', 'b', 'b', 'k','m','b'};
@@ -115,7 +117,7 @@ if job.plotacrossppants==1
             
             
              % significant?
-        [~, pvals(ifreq)] = ttest(acrossPPSNR(:,62,usef), 0); %comparing to zero
+        [~, pvals(ifreq)] = ttest(acrossPPSPEC(:,62,usef), 0); %comparing to zero
         
 %         q=.05/length(hztocheck);
         q=.05/length(f);
@@ -137,8 +139,9 @@ if job.plotacrossppants==1
         set(gca, 'fontsize', 35)
 %         ylim([0 .4])
 %%
-xlim([ 0 85])
-ylim([0 6])
+xlim([ 0 41])
+ylim([2 10])
+ylim([-1 6])
         %%
         print('-dpng', 'Whole trial SNR, chan POz')
         %%
@@ -161,7 +164,13 @@ ylim([0 6])
     titles={'f1', '2f1', '3f1',...
         'f2', '2f2', '3f2',...
         '(IM) f2-f1', '(IM) 2f2-f1', '(IM) f1 +f2'};
-    for ifreq=[15,30,45,20,40,60,5,25,35]
+    %     for ifreq=[15,30,45,20,40,60,5,25,35]
+
+    %% new shorter version.
+    titles={'f1', 'f2', '(IM) f2-f1',...
+        '2f1', '2f2', '(IM) f1 +f2'};
+    counter=1;
+for ifreq=[15,20, 5, 30,40, 35]
         
         [~,usef]= min(abs(f-ifreq));
         
@@ -176,7 +185,8 @@ ylim([0 6])
         q=fdr(pvals);
         pmask = q<1;
         plotD=squeeze(mean(acrossPPSNR(:,:,usef),1));
-        subplot(3,3,counter)
+        
+        subplot(2,3,counter)
         topoplot(plotD, elocs(1:64), 'conv', 'on', 'pmask', pmask);
         
         
@@ -188,12 +198,11 @@ ylim([0 6])
 %             cm=1;
 %         end
 %         caxis([0 cm])
-       if counter<4
-                caxis([0 2])
-       elseif counter>3 && counter<7
+       if mod(ifreq,20)==0
                 caxis([0 3])
-       elseif counter>6
-                caxis([0 1])
+       else
+                caxis([0 2])
+       
        end
         
 %         title([num2str(ifreq) ' Hz'])
