@@ -12,8 +12,7 @@ peakwidt  = .5; % FWHM at peak frequency for stimulus
 % epochdur = sum(abs([-3 3]));
 % timeid = [0:1/srate:epochdur];
 % timeid= timeid-3;
-% 
-% 
+ 
 % tidx= dsearchn(timeid', [window]');
 
 tidx=[1 size(dataIN,2)] ; %use  all timepoints..

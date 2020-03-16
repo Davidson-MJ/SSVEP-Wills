@@ -9,7 +9,7 @@
 
 clear all;  clc;
 % cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
-cd('/Users/matthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/mdavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 basedir=pwd;
 dbstop if error
 %%
@@ -54,7 +54,7 @@ job.exportDatatoExcelfolonDesktop_jamovi =0; %can save as matlab or on desktop.
 
 %perform LME in matlab
 job.LMEonHzxLOC=0;
-job.LMEnPFIwShuff=0;
+job.LMEnPFIwShuff=1;
 
 %%%%%% plotting
 
@@ -65,7 +65,7 @@ job.plotBehaviouraldata=0;
 % plot these together:
 job.plotBehaviouraldata_num_with_shuffled=1;
 
-job.compareSlopesofShuffledvsObserveddata=0;
+job.compareSlopesofShuffledvsObserveddata=1;
 
 
 
@@ -1647,7 +1647,8 @@ if job.compareSlopesofShuffledvsObserveddata==1
      
         
 %         take linear regression and plot coeff. and slope
-        [p, S] = polyfit(scAxm, datanowSc, 1); %linear fit
+%         [p, S] = polyfit(scAxm, datanowSc, 1); %linear fit
+        [p, S] = polyfit(scAxm, datanowSc, 2); %2nd order polinomial
 %         p1 is the slope, p2 the intercept
         
         if iregres==2 % store the observed slope
@@ -1656,7 +1657,8 @@ if job.compareSlopesofShuffledvsObserveddata==1
         
         f1=polyval(p,scAxm);
         hold on; 
-        
+        %sanity check plot
+%         figure (10); plot(scAxm, f1)
         %%%%%%%%% plotting
                
 %         sc=    scatter(scAxm,datanowSc);
@@ -1700,7 +1702,8 @@ if job.compareSlopesofShuffledvsObserveddata==1
         datanowSc(nanid)=[];
             
         %take linear regression and plot coeff. and slope
-        [p, S] = polyfit(scAxm, datanowSc, 1); %linear fit
+%         [p, S] = polyfit(scAxm, datanowSc, 2); %linear fit
+        [p, S] = polyfit(scAxm, datanowSc, 2); %2nd order
         %p1 is the slope, p2 the intercept
         
 %         f1=polyval(p,scAxm);
@@ -1753,7 +1756,8 @@ mX=min(hb.Data); maxX= ObservedSlope;
  xlim([ mX ObservedSlope + (ObservedSlope - mX)*.2])
 
 % xlabel(['\beta values from shuffled data']);
-xlabel(['slope of the linear fit']);
+% xlabel(['slope of the linear fit']);
+xlabel(['quadratic fit']);
            ylabel('count')
         
            set(gca, 'fontsize', 23)
@@ -2157,7 +2161,9 @@ if job.plothistofDisapdurationbynumbergone_perppants ==1
         
     end
 end
-if job.exportDatatoExcelfolonDesktop==1;
+
+
+if job.exportDatatoExcelfolonDesktop==1
     %%
     cd(basedir)
     %load relevant data
@@ -2509,7 +2515,7 @@ end
          save('BEHAVIOURAL_PFI_forLME.mat', 'Finalresults_HzxLoc', '-append')
     end
     
-    
+    %%
     if job.LMEnPFIwShuff==1
         
         
@@ -2520,10 +2526,13 @@ end
         %%
         tresults=table();
         % note to drop the '0' targets PFI, restrict to these rows:
-        nPFIonly=1;
-        nreps = 5; 
+        nPFIonly=0;
+        
+        %these variables only kick in when nPFIonly=1 (to avoid zero case).
+            nreps = 5; 
         nppants = length(allppants);
         pfirows= [nppants+1:nppants*nreps; (nppants+1:nppants*nreps)+nppants*nreps];
+        
         
         icount=1;
         for idatatype=1:2
@@ -2559,7 +2568,7 @@ end
                 
                 
                 
-                for idrop = 4%1:4 % compare interaction, hz and loc.
+                for idrop = 5%1:4 % compare interaction, hz and loc.
                     switch idrop
                         case 1 %test interaction.
                             UNterm1='DV ~ realvsshuff*nPFI + (1|subjectID)';
@@ -2578,6 +2587,10 @@ end
                             UNterm2='DV ~  1+(1|subjectID)';
                             dropis= 'FE nPFI.';
                             
+                        case 5 %test intercepts
+                            UNterm1='DV ~   nPFI^2 + (1|subjectID)';
+                            UNterm2='DV ~  1+(1|subjectID)';
+                            dropis= 'FE nPFI.';
                     end
                     
                     %%
@@ -2588,9 +2601,12 @@ end
                     
                     
                     %creating models:
-                    lmeUN =fitlme(datatable, UNterm1);%, 'fitMethod', 'REML');
-                    lmeRe =fitlme(datatable, UNterm2);%,'fitMethod', 'REML';
-                    
+%                     lmeUN =fitlme(datatable, UNterm1);%, 'fitMethod', 'REML');                    
+%                     lmeRe =fitlme(datatable, UNterm2);%,'fitMethod', 'REML';
+%                     
+
+                    lmeUN =fitnlm(datatable, UNterm1);%, 'fitMethod', 'REML');
+                    lmeRe =fitnlm(datatable, UNterm2);%,'fitMethod', 'REML';
                     tmp=compare(lmeRe, lmeUN);
                     
                     %                     [h,pValue,stat] =LogLikelihoodReport(lmeUN,lmeRe);
