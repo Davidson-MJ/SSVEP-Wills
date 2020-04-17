@@ -9,8 +9,8 @@ clear all; close all;
 
 %background dirs
 % addpath('/Users/MattDavidson/Desktop/SSVEP-Wills')
-cd('/Users/matthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
-
+% cd('/Users/matthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
+cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
 
 basefol=pwd;
 clearvars -except basefol allppants
@@ -387,10 +387,10 @@ D= Overall_rawsamp(1)-Overall_rawsamp(2)
     
     set(gca, 'fontsize', 20, 'ytick', []);
     xlim([-1.5 0.5])
-    xlabel('time from subjective report, [s]')
+    xlabel('time from button press, [s]')
     
     title({['First significant SNR points,'];['Jackknife (N-1) subsamples']})
-    legend([h1{1} h2{1}], 'target (f1)', 'background (f2)')
+    legend([h1{1} h2{1}], 'Target (f1)', 'Surround (f2)')
     %
     subplot(212);
     h1=raincloud_plot((LOO_firstSIG(:,2)-LOO_firstSIG(:,1)),'box_on', 1, 'color', [1,0,0], 'alpha', 0.5,...
@@ -402,7 +402,7 @@ D= Overall_rawsamp(1)-Overall_rawsamp(2)
     
     title('Latency difference (f2-f1), each subsample')
     axis tight
-    xlim([-1.5 0.5])
+    xlim([-1.5 0])
     hold on; plot([0 0], ylim)
     set(gca, 'fontsize', 20);
     xlabel('seconds')

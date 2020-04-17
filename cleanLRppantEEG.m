@@ -132,7 +132,7 @@ cd(basefol)
         eeglab redraw;
         
         %automate rejection:       
-        rejcomps = find(EEG.reject.gcompreject)  
+        rejcomps = find(EEG.reject.gcompreject)  ;
         %automate rejection:
             
         EEG= pop_subcomp(EEG,rejcomps);

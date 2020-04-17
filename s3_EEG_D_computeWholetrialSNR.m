@@ -15,7 +15,7 @@ pdirs = dir([pwd filesep '*_*' 'EEG']);
 % allppants=[1,2,4,6,9:16,18]; %
  allppants=[1,2,4,6,7,9:19]; %
 
-job.crunchacrossppants=1; %saves also within participant folders.
+job.crunchacrossppants=0; %saves also within participant folders.
 job.plotacrossppants=1;
 
 
@@ -187,7 +187,7 @@ for ifreq=[15,20, 5, 30,40, 35]
         plotD=squeeze(mean(acrossPPSNR(:,:,usef),1));
         
         subplot(2,3,counter)
-        topoplot(plotD, elocs(1:64), 'conv', 'on', 'pmask', pmask);
+        topoplot(plotD, elocs(1:64), 'conv', 'on');%, 'pmask', pmask);
         
         
         
@@ -219,7 +219,8 @@ title(titles{counter})
     print('-dpng', 'Topos across all, SNR preRESS, whole trial')
     %%
     % also alternate plot
-    counter=1
+    counter=1;
+    figure();
      for ifreq=[5,15,20,25,30,35,40,45,60]
         
         [~,usef]= min(abs(f-ifreq));

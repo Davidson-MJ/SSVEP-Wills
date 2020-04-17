@@ -54,7 +54,7 @@ job.exportDatatoExcelfolonDesktop_jamovi =0; %can save as matlab or on desktop.
 
 %perform LME in matlab
 job.LMEonHzxLOC=0;
-job.LMEnPFIwShuff=1;
+job.LMEnPFIwShuff=0;
 
 %%%%%% plotting
 
@@ -65,7 +65,7 @@ job.plotBehaviouraldata=0;
 % plot these together:
 job.plotBehaviouraldata_num_with_shuffled=1;
 
-job.compareSlopesofShuffledvsObserveddata=1;
+job.compareSlopesofShuffledvsObserveddata=0;
 
 
 
@@ -1462,14 +1462,18 @@ if job.plotBehaviouraldata_num_with_shuffled==1
                 mData = [mDataReal(1,2), mDataShuff(1,2); mDataReal(1,3), mDataShuff(1,3); mDataReal(1,4), mDataShuff(1,4); mDataReal(1,5), mDataShuff(1,5)];
             end
             %standard err m
+             %standard err m  %note different calculations for data and
+            %shuffled.
             for id=1:2
                 switch id
                     case 1
                         x=datanowreal;
                     case 2
-                        x=datanowshuffled;
+                        x=shuffledtoplot;
                         
                 end
+                
+                if id==1
                 mXppant =squeeze( nanmean(x,2)); %mean across conditions we are comparing (within ppant ie. RMfactors)
             mXgroup = mean(nanmean(mXppant)); %mean overall (remove b/w sub differences
             
@@ -1477,7 +1481,50 @@ if job.plotBehaviouraldata_num_with_shuffled==1
             %the group average.
             NEWdata = x - repmat(mXppant, 1,size(x,2)) + repmat(mXgroup, size(x));
             
-            stErr = nanstd(NEWdata)/sqrt(size(x,1));
+            std_tmp = nanstd(NEWdata);
+            %careful here, as we need to divide by the number of data
+            %points
+            stErr=zeros(size(std_tmp));
+            for idv=1:length(std_tmp);
+                %numberobs
+                n_isnan = length(find(isnan(NEWdata(:,idv))));
+                %correct for stErr.
+                stErr(idv)= std_tmp(idv)/ sqrt(size(NEWdata,1)-n_isnan);
+            end
+            
+                else
+                    
+                    %loop over all shuffles.
+                    allstE = zeros(size(x,2), size(x,3));
+                    for ishuff=1:size(x,2)
+                        newx = squeeze(x(:,ishuff,:));
+                       mXppant =squeeze( nanmean(newx,2)); %mean across conditions we are comparing (within ppant ie. RMfactors)
+            mXgroup = mean(nanmean(mXppant)); %mean overall (remove b/w sub differences
+            
+            %for each observation, subjtract the subj average, add
+            %the group average.
+            NEWdata = newx - repmat(mXppant, 1,size(newx,2)) + repmat(mXgroup, size(newx));
+            
+            std_tmp = nanstd(NEWdata);
+            %careful here, as we need to divide by the number of data
+            %points
+            stErr=zeros(size(std_tmp));
+            for idv=1:length(std_tmp);
+                %numberobs
+                n_isnan = length(find(isnan(NEWdata(:,idv))));
+                %correct for stErr.
+                stErr(idv)= std_tmp(idv)/ sqrt(size(NEWdata,1)-n_isnan);
+            end
+%             stErr = nanstd(NEWdata)/sqrt(size(newx,1));
+            
+            
+            allstE(ishuff, :) = stErr; 
+                    end
+                
+                    %take mean across shuffles.
+                    stErr = nanmean(allstE,1);
+                end
+                    
             switch id
                 case 1
                     stErrReal = stErr;
@@ -1485,6 +1532,30 @@ if job.plotBehaviouraldata_num_with_shuffled==1
                     stErrShuffled= stErr;
             end
             end
+            
+%             for id=1:2
+%                 switch id
+%                     case 1
+%                         x=datanowreal;
+%                     case 2
+%                         x=datanowshuffled;
+%                         
+%                 end
+%                 mXppant =squeeze( nanmean(x,2)); %mean across conditions we are comparing (within ppant ie. RMfactors)
+%             mXgroup = mean(nanmean(mXppant)); %mean overall (remove b/w sub differences
+%             
+%             %for each observation, subjtract the subj average, add
+%             %the group average.
+%             NEWdata = x - repmat(mXppant, 1,size(x,2)) + repmat(mXgroup, size(x));
+%             
+%             stErr = nanstd(NEWdata)/sqrt(size(x,1));
+%             switch id
+%                 case 1
+%                     stErrReal = stErr;
+%                 case 2
+%                     stErrShuffled= stErr;
+%             end
+%             end
             
             offset=.15;
             
