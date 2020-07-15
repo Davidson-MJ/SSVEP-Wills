@@ -2,18 +2,8 @@ function [ressEVEC, ressTS, ressSNR, ressMAPS, hz]= constrRESSacrosstrials_wills
 
 
 peakwidt  = .5; % FWHM at peak frequency for stimulus
+% peakwidt  = 1; % FWHM at peak frequency for stimulus
 
-%%%% these need to be calibrated for our closely spaced freqs.
-
-
- 
-
-% this bit hard coded, 6 s window length
-% epochdur = sum(abs([-3 3]));
-% timeid = [0:1/srate:epochdur];
-% timeid= timeid-3;
- 
-% tidx= dsearchn(timeid', [window]');
 
 tidx=[1 size(dataIN,2)] ; %use  all timepoints..
         
@@ -30,7 +20,7 @@ tid(badtrials)=[];
 % extract EEG data for RESS
 dataIN = squeeze(dataIN(usechans,:,tid));
 
-useneighs=1;
+useneighs=1; % or use broadband (if 0).
 
 
 peakfreq1=peakfreqsall(ifreq);

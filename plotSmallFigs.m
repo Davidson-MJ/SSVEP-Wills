@@ -482,7 +482,7 @@ if job.compareAMOUNT_PFIandPMD_raincloudver==1
     clf
     d=[];
     %can plot BARS next to trial-by-trial image, or snr-timecourse.
-for     plotBarsorTimeseries=1%
+for     plotBarsorTimeseries=2%
 
     
     getelocs
@@ -532,7 +532,7 @@ for     plotBarsorTimeseries=1%
         ylimsare=ylimsareHz(hzis,:);
         
         
-        for iPFInCatch=1:2
+        for iPFInCatch=1%:2
         switch iPFInCatch
             case 1
         
@@ -637,30 +637,12 @@ for     plotBarsorTimeseries=1%
                    
                    
                    groupednPFISNR_ts(ippant, iPFI,:)= squeeze(nanmean(ppant_SNR_ts(indices,:)));
-% %                    %
-%                    figure(3)
-%                    clf
-%                    plot(ppantSNRflpd);
-%                    hold on
-%                    plot([indices(1) indices(1)], ylim, ['k:'])
-%                    plot([indices(end) indices(end)], ylim, ['k:'])
-%                    title([num2str(squeeze(nanmean(ppantSNRflpd(indices))))])
-               end
-               
-% works well.  
 
-groupednPFISNR_quarters(ippant,1)= squeeze(nanmean(ppant_SNR(1:24)));
-groupednPFISNR_quarters(ippant,2)= squeeze(nanmean(ppant_SNR(25:50)));
-groupednPFISNR_quarters(ippant,3)= squeeze(nanmean(ppant_SNR(51:75)));
-groupednPFISNR_quarters(ippant,4)= squeeze(nanmean(ppant_SNR(76:100)));
+               end
 
 %                
             end
-            %% using raw thirds?
-%             groupednPFISNR_thirds=fliplr(groupednPFISNR_thirds);
-%                         groupednPFISNR=fliplr(groupednPFISNR_thirds);
-%             groupednPFISNR
-            
+           
             %%
             figure(1); 
             if plotBarsorTimeseries==1
@@ -711,10 +693,8 @@ xlim([.5 4.5])
 %             %RMANOVA?
             dataan= reshape(groupednPFISNR, [nppants*nconds,1]);
             conds = [ones(nppants,1); ones(nppants,1)*2;ones(nppants,1)*3;ones(nppants,1)*4];
-                subs = repmat([1:length(allppants)]', [nconds,1]);
-%             
-%             [anret]=rmanova(dataan, conds, subs);
-% %%
+            subs = repmat([1:length(allppants)]', [nconds,1]);
+
 %             %LME to be sure:            
           tblA=table(dataan, conds, subs);
 %%             %%
@@ -797,21 +777,21 @@ counter2=counter2+1;
            %%
            clf
            if hzis==1
-           rb= [0,0,1; 1,0,0];
+               rb= [0,0,1; 1,0,0];
            else
                rb=[0,0,0; 1,0,0];
            end
            
            %plot rain clouds
-        str=rm_raincloud(d, rb, 0,'ks',.18);
-            
- set(gcf, 'Position',[-1320,219,537,564])
-            set(gca, 'fontsize', 25)            
-            xlabel('RESS log(SNR)')
-            ylabel('amount of PFI or PMD');
-            lg=legend([str.p{1,1}, str.p{2,2}] ,['f' num2str(hzis) ' during PFI'], ['f' num2str(hzis) ' during PMD']); 
-            axis tight
-            
+           str=rm_raincloud(d, rb, 0,'ks',.18);
+           
+           set(gcf, 'Position',[-1320,219,537,564])
+           set(gca, 'fontsize', 25)
+           xlabel('RESS log(SNR)')
+           ylabel('amount of PFI or PMD');
+           lg=legend([str.p{1,1}, str.p{2,2}] ,['f' num2str(hzis) ' during PFI'], ['f' num2str(hzis) ' during PMD']);
+           axis tight
+           
             set(lg, 'location', 'SouthWest')
         %%
             

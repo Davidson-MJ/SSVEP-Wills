@@ -1,4 +1,4 @@
-cd('/Users/MatthewDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
+cd('/Users/MDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/Behaviour')
 load('Raw_Behavioral_AllPP.mat', 'AllTrialsAllPPBottomLeft'); 
 %%
 targX=[];

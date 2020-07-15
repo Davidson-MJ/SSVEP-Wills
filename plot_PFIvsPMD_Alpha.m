@@ -1,5 +1,4 @@
- 
-
+getelocs
 close all
 normON=1;
 logscale =0;
@@ -120,7 +119,7 @@ for iPFI = 1:2
  
      % perform sig tests.
   
-     for iTEST =1:2 % compare PFI and then PMD, to baseline.
+     for iTEST =1%:2 % compare PFI and then PMD, to baseline.
          pvals=[];
          for itime = 1:size(plotd,2)
              [~, pvals(itime)] = ttest(ttestdata(iTEST,:,itime),compareTO); % PFI
@@ -133,7 +132,7 @@ for iPFI = 1:2
          [pv, pvals_cor ] = fdr(pvals, .05);
          
          if pv~=0 && pv<.05
-             textis = ['\itp \rm= ' sprintf('%.3f', pv1)]; % sig output.
+             textis = ['\itp \rm= ' sprintf('%.3f', pv)]; % sig output.
          else
              textis = '\itns'; % ns
          end
