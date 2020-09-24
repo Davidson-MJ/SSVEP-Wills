@@ -3,10 +3,10 @@
 clear all; close all; 
 clearvars -except basefol allppants
 
-job.gradedchangesinERPimage_PFI=0;
+job.gradedchangesinERPimage_PFI=1;
 
 job.compareAMOUNT_PFIandPMD=0;
-job.compareAMOUNT_PFIandPMD_raincloudver=1;
+job.compareAMOUNT_PFIandPMD_raincloudver=0;
 
 
 % Follows the format of s3_CE... only now applying to RESS timeseries
@@ -848,7 +848,7 @@ for     plotBarsorTimeseries=1:2 % plots bars beneath, then timeseries.
          hzlabel={'f1', 'f2', '2f1', '2f2', '3f1', '3f2*', 'f2-f1'};
          
          
-    for hzis=2%:6%[1, 2, 7]
+    for hzis=1:2%6%[1, 2, 7]
         cd(basefol)
         cd('EEG')
         cd('GFX_EEG-RESS')

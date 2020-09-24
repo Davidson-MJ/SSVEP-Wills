@@ -15,7 +15,7 @@ clear all
 cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
 
 
-
+r
 basefol=pwd;
 clearvars -except basefol allppants
 dbstop if error
@@ -54,6 +54,7 @@ job.gradedchangesinERPimage_Catch=0;
 job.BPandSSVEPtimecourseacrossppants_group=0; %same format as previous script (epoch PFI etc.)
 job.BPandSSVEPtimecourseacrossppants_group_CATCH=0; %same format as previous script (epoch PFI etc.)
 
+%%Paper plots: (see also plotSmallFigs.m)
 job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH=1; %same format as previous script (epoch PFI etc.)
 
 %%%%% %%%%%%% %%%%%% %%%%%% %%%%%%
@@ -4408,8 +4409,8 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 
     clf
     rmvbase=0; % normalize
-    checksigON=1; % check sigs between directions
-    checkcluster=1; % clusters only
+    checksigON=0; % check sigs between directions
+    checkcluster=0; % clusters only
 
     collectBarwindow = [0, 1]; % seconds to collect SNR difference between disappearance/reappearance.
     
@@ -4440,7 +4441,7 @@ lsh=[];
 plotBARoutput=0; % plot the output or no, not need all hzis = 1:7 for BAR output.
 barcounter=1;
 %%
-for hzis=1:2%:7% need all 7 for bar data.
+for hzis=7%1:2%:7% need all 7 for bar data.
     clf
     for idtype=1%1:2
         switch idtype
