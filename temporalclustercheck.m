@@ -124,7 +124,7 @@
                     %is the observed greater than CV?
                     % plot histogram:
                     %%
-                    figure(2);
+                    figure(12);
                     
                     clf
                     
@@ -157,12 +157,13 @@
                             axis tight;
                         yl=get(gca, 'ylim');
                         end
-                        if idtype==1 % place sig markers at top of figure for PFI
-%                             sigplace = yl(2)+.7*(diff(yl));
+                        
                         sigplace = yl(2)+.02;
-                        else
+%                         if idtype==1 && hzis==1 % place underneath.
                             sigplace = yl(1)-.2*(diff(yl)); % place at bottom for catch
-                        end
+%                         end
+                        if idtype==2; sigcolor= 'r'; end
+                            
                         for itime=checktimes
                             
                             hold on

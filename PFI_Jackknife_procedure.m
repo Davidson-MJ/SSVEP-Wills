@@ -35,7 +35,7 @@ useinterp=1;
 
 %% first as sanity check, plot the group results
 [Overall_rawsamp, OverallSigdiff]=deal([]);
-for hzis=1:2 %for each frequency
+for hzis=1:3 %for each frequency
     
     switch hzis
         case 1
@@ -50,6 +50,14 @@ for hzis=1:2 %for each frequency
             %rename for next part of script
             storeacrossPpant_onsetSNR20=storeacrossPpant_onsetSNR;
             storeacrossPpant_offsetSNR20=storeacrossPpant_offsetSNR;
+            col='k';
+            
+             case 3
+            
+            load('GFX_PFIperformance_withSNR_5_min0_RESS')
+            %rename for next part of script
+            storeacrossPpant_onsetSNR5=storeacrossPpant_onsetSNR;
+            storeacrossPpant_offsetSNR5=storeacrossPpant_offsetSNR;
             col='m';
     end
     
@@ -193,7 +201,7 @@ end
         useppants(iJK)=[];
         
         
-        for hzis=1:2 %for each frequency
+        for hzis=1:3 %for each frequency
             
             %             if iJK==1 % just load the first time.
             switch hzis
@@ -206,6 +214,12 @@ end
                     storeacrossPpant_onsetSNR=storeacrossPpant_onsetSNR20;
                     storeacrossPpant_offsetSNR=storeacrossPpant_offsetSNR20;
                     col='k';
+                     case 3
+                       storeacrossPpant_onsetSNR=storeacrossPpant_onsetSNR5;
+                    storeacrossPpant_offsetSNR=storeacrossPpant_offsetSNR5;
+                    col='m';
+                    
+                    
             end
             
             %%        Jackknife leave one out
@@ -294,6 +308,7 @@ end
                 vect1 = diff(sigs);
                 v1 = (vect1(:)==1);
                 d = diff(v1);
+               if ~isempty(d)
                 clusterSTandEND= [find([v1(1);d]==1) find([d;-v1(end)]==-1)];
                 [~,maxClust] = max(clusterSTandEND(:,2)-clusterSTandEND(:,1));
                 
@@ -304,7 +319,9 @@ end
                 else
                     STC=timeidDYN(minSIG);
                 end
-                
+                else
+                    STC =nan; % no sig cluster this iteration
+                end
                 LOO_firstSIG(iJK,hzis)= STC;
             end
             
@@ -367,31 +384,33 @@ D= Overall_rawsamp(1)-Overall_rawsamp(2)
 
     pval = tcdf(tstatJK, N-1)
     end
-    %% plot ditribution of results
+    
+     %% plot ditribution of results
     
     
     figure(3); clf
-    subplot(211)
-    h1=raincloud_plot(LOO_firstSIG(:,1),'box_on', 1, 'color', [0,0,1], 'alpha', 0.5,...
-        'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-        'box_col_match', 0);
-    %increase scatter size:
-    h1{2}.SizeData=100;
-    h1{2}.LineWidth=2;
-    h2=raincloud_plot(LOO_firstSIG(:,2),'box_on', 1, 'color', [0,0,0], 'alpha', 0.5,...
+%     subplot(211)
+    usecols = [0,0,1; 0,0,0; 1,0,1]; % b'k'm'.
+    legh=[];
+    for ihz = 1:3
+    h1=raincloud_plot(LOO_firstSIG(:,ihz),'box_on', 1, 'color', usecols(ihz,:), 'alpha', 0.5,...
         'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
         'box_col_match', 1);
+    %increase scatter size:
+    h1{2}.SizeData=20;
+    h1{2}.LineWidth=5;
+    legh(ihz) = h1{1};
+    end
+    
     axis tight
-    h2{2}.SizeData=100;
-    h2{2}.LineWidth=2;
-    
     set(gca, 'fontsize', 20, 'ytick', []);
-    xlim([-1.5 0.5])
-    xlabel('time from button press, [s]')
+    xlim([-1.5 0])
+    xlabel('time from button press [s]')
     
-    title({['First significant SNR points,'];['Jackknife (N-1) subsamples']})
-    legend([h1{1} h2{1}], 'Target (f1)', 'Surround (f2)')
-    %
+%     title({['First significant SNR points,'];['Jackknife (N-1) subsamples']})
+    legend([legh(1) legh(2) legh(3)], 'Target (f1)', 'Surround (f2)', 'IM (f2-f1)')
+    set(gcf, 'color', 'w')
+    %%
     subplot(212);
     h1=raincloud_plot((LOO_firstSIG(:,2)-LOO_firstSIG(:,1)),'box_on', 1, 'color', [1,0,0], 'alpha', 0.5,...
         'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...

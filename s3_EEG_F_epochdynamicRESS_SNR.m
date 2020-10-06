@@ -15,7 +15,7 @@ clear all
 cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
 
 
-r
+
 basefol=pwd;
 clearvars -except basefol allppants
 dbstop if error
@@ -4409,8 +4409,8 @@ if job.BPandSSVEPtimecourseacrossppants_group_combinePFIandCATCH==1
 
     clf
     rmvbase=0; % normalize
-    checksigON=0; % check sigs between directions
-    checkcluster=0; % clusters only
+    checksigON=1; % check sigs between directions
+    checkcluster=1; % clusters only
 
     collectBarwindow = [0, 1]; % seconds to collect SNR difference between disappearance/reappearance.
     
@@ -4441,26 +4441,31 @@ lsh=[];
 plotBARoutput=0; % plot the output or no, not need all hzis = 1:7 for BAR output.
 barcounter=1;
 %%
+% grabmyPFIcols; % returns my cols, first dim = hz, second dim = pfi;pmd
+
+
 for hzis=7%1:2%:7% need all 7 for bar data.
-    clf
-    for idtype=1%1:2
+
+    %plot colour:
+    col=colsare{hzis};
+    
+    for idtype=1:2
+        
+        figure(idtype); clf
+        
         switch idtype
             case 1
                 useD= 'PFI';
-                
+                ltype = useD; % for legend
                 falpha = .25;  % alpha value to darken plot.
-                %plot colour:
-                col=colsare{hzis};
+                
                 
             case 2
                 useD= 'Catch_';
+                ltype = 'PMD'; % for legend
                 sigcolor='r';  % color of sig points on figure,
-                falpha = .15;  % alpha value to lighten plot.
-                
-                %** changed catch colour
-                %all now  red
-                col = 'r';
-                
+                falpha = .25;  % alpha value to lighten plot.
+              
         end
         cd(basefol)
         cd('EEG')
@@ -4479,6 +4484,11 @@ for hzis=7%1:2%:7% need all 7 for bar data.
         ttestdata=[];
         %         legendprint=[];
         
+        
+        
+        
+%         col =[ mycols(hzis, idtype).c];
+%         col='m';
         diffTEMP = []; % we want the difference between disap/reap for each iteration.
         for itimezero=1:2%1%:2%1:2
             
@@ -4493,7 +4503,7 @@ for hzis=7%1:2%:7% need all 7 for bar data.
                     end
                     
                     chtype='button press/release';                    
-                    linet='--';
+                    linet=':';
                     
                     % new marker types:
                     if idtype==1
@@ -4517,12 +4527,12 @@ for hzis=7%1:2%:7% need all 7 for bar data.
                 case 3
                     useSNR=storeacrossPpant_onsetSNR+storeacrossPpant_offsetSNR;
                     chtype = 'subjective report';
-                    linet=':';
+                    linet='.';
                     
             end
             
             figure(1);
-            
+            subplot(1,2,idtype)
             used=useSNR;
             
             hold on
@@ -4563,9 +4573,16 @@ for hzis=7%1:2%:7% need all 7 for bar data.
             sh.mainLine.LineStyle=linet;
             sh.patch.FaceColor = col;
             sh.patch.FaceAlpha= falpha;
+            % change PMD shading.
+            if idtype==2
+%                 sh.mainLine.Color = 'r';
+            sh.patch.FaceColor = 'r';            
+            end
+            
             sh.edge(1).Color = col;
             sh.edge(2).Color = col;
-            %
+            
+            
             sh.mainLine.Marker = markert;
             sh.mainLine.MarkerSize=25;
             
@@ -4640,16 +4657,7 @@ for hzis=7%1:2%:7% need all 7 for bar data.
         end
         
         
-        
-    end % PFI vs Catch
-    
-    hold on 
-    
-
-    %%
-  %% adjust ylims.
-       
-            
+         
             set(gca, 'fontsize', 25)
             
             set(gcf, 'color', 'w')
@@ -4658,14 +4666,25 @@ for hzis=7%1:2%:7% need all 7 for bar data.
             
             %Percent of ydim.
             PTy=(yl(2)-yl(1))*.35;
-            ylim([yl(1) yl(2)+PTy]) % f1            
+            ylim([yl(1)-PTy/2 yl(2)+PTy]) % f1            
             
  plot([0 0 ], ylim, ['k-']);   
- lg=legend([lsh(1), lsh(2)], [{'Target Invisible (PFI)'}, {'Reappearance'}]);
+ lg=legend([lsh(1), lsh(2)], [{['Disappearance (' ltype ')']}, {'Reappearance'}], 'autoupdate', 'off');
     
     set(lg, 'Location', 'Northeast'); shg
+    
+    end % PFI vs Catch
+    
+    hold on 
+    
+
+    %%
+  %% adjust ylims.
+       
+           
     %% set same dimensions as the raincloud plots (plotted in plotSmallFigs.m)    
     set(gcf, 'units', 'normalized', 'position', [.25 .41 .25 .4], 'color', 'w');
+    set(gcf, 'units', 'normalized', 'position', [.25 .41 .55 .4], 'color', 'w');
       cd(basefol)
     cd('Figures')
     cd('GFX Dynamic RESS')

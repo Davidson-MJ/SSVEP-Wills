@@ -399,19 +399,13 @@ D= Overall_rawsamp(1)-Overall_rawsamp(2)
     h{2}.LineWidth=2;
     
     end
-    %%
-%     h2=raincloud_plot(LOO_firstSIG(:,2),'box_on', 1, 'color', [0,0,0], 'alpha', 0.5,...
-%         'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-%         'box_col_match', 1);
-%     axis tight
-%     h2{2}.SizeData=100;
-%     h2{2}.LineWidth=2;
+      h2{2}.LineWidth=2;
     axis tight
     set(gca, 'fontsize', 20, 'ytick', []);
     xlim([-1.5 0.5])
     xlabel('time from button press, [s]')
     %%
-    title({['First significant SNR points,'];['Jackknife (N-1) subsamples']})
+%     title({['First significant SNR points,'];['Jackknife (N-1) subsamples']})
     legend([h1 h2], 'Target (f1)', 'Surround (f2)')
     %
     subplot(212);

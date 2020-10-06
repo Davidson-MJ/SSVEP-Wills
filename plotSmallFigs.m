@@ -5,8 +5,11 @@ clearvars -except basefol allppants
 
 job.gradedchangesinERPimage_PFI=1;
 
-job.compareAMOUNT_PFIandPMD=0;
+job.compareAMOUNT_PFIandPMD=1;
 job.compareAMOUNT_PFIandPMD_raincloudver=0;
+
+%review:
+job.compareAMOUNT_PFIandPMD_raincloudver2=0;
 
 
 % Follows the format of s3_CE... only now applying to RESS timeseries
@@ -482,7 +485,7 @@ if job.compareAMOUNT_PFIandPMD_raincloudver==1
     clf
     d=[];
     %can plot BARS next to trial-by-trial image, or snr-timecourse.
-for     plotBarsorTimeseries=2%
+for     plotBarsorTimeseries=1%
 
     
     getelocs
@@ -532,7 +535,7 @@ for     plotBarsorTimeseries=2%
         ylimsare=ylimsareHz(hzis,:);
         
         
-        for iPFInCatch=1%:2
+        for iPFInCatch=2%:2
         switch iPFInCatch
             case 1
         
@@ -549,6 +552,9 @@ for     plotBarsorTimeseries=2%
                 
                 storeacrossPpant_onsetSNR = squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
                 storeacrossPpant_offsetSNR = squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
+                
+                storeacrossPpant_onsetBP = squeeze(storeacrossPpant_catchEVENTS_BPs(:,3,:,:));
+                storeacrossPpant_offsetBP = squeeze(storeacrossPpant_catchEVENTS_BPs(:,4,:,:));
         end
 %         tgrm = timeidDYN;
         %%
@@ -762,17 +768,19 @@ counter2=counter2+1;
         end 
         
         %stash bars for stacked plots:
+        if plotBarsorTimeseries==1
         stackedB(iPFInCatch,:) = mbar;
         stackedB_sd(iPFInCatch,:) = stB;
-        
+        end
       
          
       for i = 1:size(groupednPFISNR,2)
-          d{i,iPFInCatch}= NEWdata(:,i);
+          d{i,hzis}= NEWdata(:,i)%./(nanmean(NEWdata(:,1)));
+%           d{i,iPFInCatch}= NEWdata(:,i);
       end
-        end
+        end%PFI
         %%
-           
+           end % hzis
         
            %%
            clf
@@ -782,18 +790,21 @@ counter2=counter2+1;
                rb=[0,0,0; 1,0,0];
            end
            
+           rb  = [0,0,1; 0,0,0];
            %plot rain clouds
            str=rm_raincloud(d, rb, 0,'ks',.18);
+%            str=rm_raincloud(d, rb, 0,'rash');
            
            set(gcf, 'Position',[-1320,219,537,564])
            set(gca, 'fontsize', 25)
            xlabel('RESS log(SNR)')
-           ylabel('amount of PFI or PMD');
+           ylabel('amount of PMD');
            lg=legend([str.p{1,1}, str.p{2,2}] ,['f' num2str(hzis) ' during PFI'], ['f' num2str(hzis) ' during PMD']);
+           lg=legend([str.p{1,1}, str.p{2,2}] ,['f1 during PMD'], ['f2 during PMD']);
            axis tight
            
             set(lg, 'location', 'SouthWest')
-        %%
+        
             
         hzcounter=hzcounter+1;
     
@@ -808,7 +819,7 @@ counter2=counter2+1;
     cd('GFX PFI trial by trial')
     shg
      print('-dpng', ['PFI graded SNR summary graded, f ' num2str(hzis) '.png'])
-    end
+    
 end
    
     

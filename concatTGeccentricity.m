@@ -31,20 +31,37 @@ end
 clf
 hg=histogram(TGdva, ceil(nppants));
 hg.FaceColor = 'b';
+hold on
+tmp=TGdva;
+tmp(:) = nan;
+tmp([3,5,8]) = TGdva(1,[3,5,8]);
+%add removed ppants in different colour.
+hr = histogram(tmp, ceil(nppants));
+hr.EdgeColor='r';
+hr.FaceColor = hg.FaceColor;
+hr.LineWidth = 4;
+hr.BinWidth = hg.BinWidth;
+hr.BinLimits= hg.BinLimits;
+ylim([.01 8])
+shg
+%%
 set(gca, 'xtick', 0:0.6:6);
 xlabel({['Calibrated target eccentricity'];['from center (\circ visual angle)']});
 ylabel('Participant count')
 set(gcf, 'color', 'w');
 set(gca, 'fontsize', 25);
-xlim([2.9 6])
-hg=histogram(round(TGdva,2), 25);
-hg.FaceColor = 'b';
-xlabel({['Calibrated target eccentricity (d.v.a.)']});
-ylabel('# participants')
-set(gcf, 'color', 'w');
-%
-set(gca, 'fontsize', 25, 'Xminortick', 'on','xtick', 3:.5:7);
-shg
+xlim([2.9 6]);
+
+legend(hr, 'excluded from sample');
+% %%
+% hg=histogram(round(TGdva,2), 25);
+% hg.FaceColor = 'b';
+% xlabel({['Calibrated target eccentricity (d.v.a.)']});
+% ylabel('# participants')
+% set(gcf, 'color', 'w');
+% %
+% set(gca, 'fontsize', 25, 'Xminortick', 'on','xtick', 3:.5:7);
+% shg
 %%
 cd ../Figures
 cd('Behavioural Bar Plots')
