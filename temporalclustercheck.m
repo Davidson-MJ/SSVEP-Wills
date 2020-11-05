@@ -1,4 +1,10 @@
-  %check for sig
+  %% check for sig
+  % % as input, the data matrix should be single subject averages, such
+  % that:
+  % [ncondition, nsubjects , ntimepoints]= size(ttestdata);
+  
+  
+  
             pvals=zeros(1,size(ttestdata,3));
             tvals=zeros(1,size(ttestdata,3));
             for itime = 1:size(ttestdata,3)
@@ -151,13 +157,13 @@
                         title(['sum tvals = ' num2str(observedCV)]);
                         %              title('Spatial Cluster  Significant!')
                         %                     timeidDYN=tgrm-3;
-                        
+                        %%
                         figure(1);
                         if icl==1
                             axis tight;
                         yl=get(gca, 'ylim');
                         end
-                        
+                        %%
                         sigplace = yl(2)+.02;
 %                         if idtype==1 && hzis==1 % place underneath.
                             sigplace = yl(1)-.2*(diff(yl)); % place at bottom for catch

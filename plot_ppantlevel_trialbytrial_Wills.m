@@ -3,7 +3,7 @@
 
 clear all
 dbstop if error
-cd('/Users/MattDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
+cd('/Users/MDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA/EEG')
 %
 dirs =dir([pwd filesep '*_*' 'EEG']);
 basefol=pwd;

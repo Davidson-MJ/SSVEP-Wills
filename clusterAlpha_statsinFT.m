@@ -3,8 +3,8 @@
       cd(basefol)
       cd('EEG')
       %%
-%       load('GFX_LeftvsRight_TFdecomp.mat')
-      load('GFX_LeftvsRight_TFdecomp_PMD.mat')
+      load('GFX_LeftvsRight_TFdecomp.mat')
+%       load('GFX_LeftvsRight_TFdecomp_PMD.mat')
       tstamps = [1:1:size(all_leftON_hilb,3)]/250 - 3;
 
       Subchans = [12,13,15,16,17:32,47,48,49,50 51:64];

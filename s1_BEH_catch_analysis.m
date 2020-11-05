@@ -765,7 +765,7 @@ if job.calcNEWShuffledCatchOnsetBPProb==1
     
     load('MD_AllBP_perppant.mat')
     
-    nshuff=200; 
+    nshuff=1000; 
     
     acrossall_mShuffledCatch_MD=zeros(length(ppantTrialDatawithDetails), 2, nshuff, 601);
     for ippant = 1:length(ppantTrialDatawithDetails)
@@ -1193,7 +1193,7 @@ if job.plotCatchtracesbynumTargets==1
     
     % can also plot INVIS
     
-    plotINVIScatchonset=1;
+    plotINVIScatchonset=0;
     
     %collect onset trace across ppants for each type
     %%

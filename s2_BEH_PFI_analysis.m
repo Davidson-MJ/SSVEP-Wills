@@ -62,10 +62,10 @@ job.LMEnPFIwShuff=0;
 %plot the results for PFI, in separate bar graphs.
 job.plotBehaviouraldata=0;
 
-% plot these together:
+% plot these together: (PAPER FIGURE)
 job.plotBehaviouraldata_num_with_shuffled=1;
 
-job.compareSlopesofShuffledvsObserveddata=0;
+job.compareSlopesofShuffledvsObserveddata=1;
 
 
 
@@ -1707,7 +1707,7 @@ if job.compareSlopesofShuffledvsObserveddata==1
             %% observed slope = 
             scAx = 1:size(datanowreal,2);
             if iregres==1
-                scAx=scAx+.15;
+                scAx=scAx+.15; %axis
             end
             scAx = repmat(scAx, [size(datanowreal,1),1]);
             
@@ -1726,7 +1726,7 @@ if job.compareSlopesofShuffledvsObserveddata==1
         ObservedSlope=p(1);
         end
         
-        f1=polyval(p,scAxm);
+%         f1=polyval(p,scAxm);
         hold on; 
         %sanity check plot
 %         figure (10); plot(scAxm, f1)

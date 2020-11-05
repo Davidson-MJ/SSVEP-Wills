@@ -2,7 +2,8 @@
 % confirm latency differences for F1 and F2 (during PFI).
 
 
-clear all; close all;
+% clear all;
+close all;
 
 %need to load the PFI data:
 % copy-paste of BP_SSVEP script (PFI and Catch).
@@ -13,7 +14,7 @@ clear all; close all;
 cd('/Users/mDavidson/Desktop/SSVEP-feedbackproject/AA_ANALYZED DATA')
 
 basefol=pwd;
-clearvars -except basefol allppants
+clearvars -except basefol allppants LOO*
 dbstop if error
 getelocs
 cd(basefol)
@@ -39,31 +40,36 @@ for hzis=1:3 %for each frequency
     
     switch hzis
         case 1
-            load('GFX_PFIperformance_withSNR_15_min0_RESS')
+            load('GFX_Catch_performance_withSNR_15_min0_RESS')
             %rename for next part of script
-            storeacrossPpant_onsetSNR15=storeacrossPpant_onsetSNR;
-            storeacrossPpant_offsetSNR15=storeacrossPpant_offsetSNR;
+            storeacrossPpant_onsetSNR15= squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
+            storeacrossPpant_offsetSNR15=squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
             col='b';
         case 2
             
-            load('GFX_PFIperformance_withSNR_20_min0_RESS')
+           load('GFX_Catch_performance_withSNR_20_min0_RESS')
             %rename for next part of script
-            storeacrossPpant_onsetSNR20=storeacrossPpant_onsetSNR;
-            storeacrossPpant_offsetSNR20=storeacrossPpant_offsetSNR;
+            storeacrossPpant_onsetSNR20= squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
+            storeacrossPpant_offsetSNR20=squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
+            col='b';
             col='k';
         case 3
             
-            load('GFX_PFIperformance_withSNR_5_min0_RESS')
+            load('GFX_Catch_performance_withSNR_5_min0_RESS')
             %rename for next part of script
-            storeacrossPpant_onsetSNR5=storeacrossPpant_onsetSNR;
-            storeacrossPpant_offsetSNR5=storeacrossPpant_offsetSNR;
+            storeacrossPpant_onsetSNR5= squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
+            storeacrossPpant_offsetSNR5=squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
+            
             col='m';
+            
     end
     
     %%        Jackknife leave one out
+    tmpOnsets = squeeze(storeacrossPpant_catchEVENTS_SNR(:,3,:,:));
+    tmpOffsets = squeeze(storeacrossPpant_catchEVENTS_SNR(:,4,:,:));
     
-    useONSETs = squeeze(nanmean(storeacrossPpant_onsetSNR,2)); %participant averages.
-    useOFFSETs = squeeze(nanmean(storeacrossPpant_offsetSNR,2));
+    useONSETs = squeeze(nanmean(tmpOnsets,2)); %participant averages.
+    useOFFSETs = squeeze(nanmean(tmpOffsets,2));
     
     ttestdata=[];
     if useinterp==1
@@ -383,30 +389,33 @@ D= Overall_rawsamp(1)-Overall_rawsamp(2)
 
     pval = tcdf(tstatJK, N-1);
     end
-    %% plot ditribution of results
+       %% plot ditribution of results
     
     
     figure(3); clf
+    set(gcf, 'units', 'normalized', 'position', [0 .35 .35 .6])
     subplot(211)
     usecols = [0,0,1; 0,0,0; 1,0,1]; % b'k'm'.
     legh=[];
     for ihz = 1:3
     h1=raincloud_plot(LOO_firstSIG(:,ihz),'box_on', 1, 'color', usecols(ihz,:), 'alpha', 0.5,...
         'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-        'box_col_match', 0);
+        'box_col_match', 1);
     %increase scatter size:
-    h{2}.SizeData=100;
-    h{2}.LineWidth=2;
-    
+    h1{2}.SizeData=20;
+    h1{2}.LineWidth=5;
+    legh(ihz) = h1{1};
     end
-      h2{2}.LineWidth=2;
+    
     axis tight
     set(gca, 'fontsize', 20, 'ytick', []);
-    xlim([-1.5 0.5])
-    xlabel('time from button press, [s]')
-    %%
-%     title({['First significant SNR points,'];['Jackknife (N-1) subsamples']})
-    legend([h1 h2], 'Target (f1)', 'Surround (f2)')
+    xlim([-1.5 0])
+    xlabel('time from button press [s]')    
+    title({['First significant SNR points during PMD,'];['Jackknife (N-1) subsamples']})
+    legend([legh(1) legh(2) legh(3)], 'Target (f1)', 'Surround (f2)', 'IM (f2-f1)', 'autoupdate', 'off')
+    set(gcf, 'color', 'w')
+    xlim([-1.5 1.5])
+    hold on; plot([0 0 ], ylim, ':', 'linew', 3, 'col', 'k')
     %
     subplot(212);
     h1=raincloud_plot((LOO_firstSIG(:,2)-LOO_firstSIG(:,1)),'box_on', 1, 'color', [1,0,0], 'alpha', 0.5,...
@@ -414,15 +423,160 @@ D= Overall_rawsamp(1)-Overall_rawsamp(2)
         'box_col_match', 0);
     %increase scatter size:
     h1{2}.SizeData=100;
+    
     h1{2}.LineWidth=2;
     
     title('Latency difference (f2-f1), each subsample')
     axis tight
+    set(gca, 'fontsize', 20, 'ytick', []);
     xlim([-1.5 0])
     hold on; plot([0 0], ylim)
     set(gca, 'fontsize', 20);
     xlabel('seconds')
-    
- 
+    xlim([-1.5 1.5])
+ hold on; plot([0 0 ], ylim, ':', 'linew', 3, 'col', 'k')
 
 %%
+
+% fig 2. 
+% prevBoxplotfigure; % for back compatability.
+figure(6); clf % arrange columns as f1, IM , f2 (1,3,2)
+set(gcf, 'units', 'normalized', 'position', [0 .55 .4 .4]);
+tmp = LOO_firstSIG;
+tmp(:,2) = LOO_firstSIG(:,3);
+tmp(:,3) = LOO_firstSIG(:,2);
+
+%
+SCcol = {'b', 'm', 'k'};
+nppants = size(LOO_firstSIG,1);
+keepscatter_x= []; % for linking the individual data points afterwards.
+keepscatter_y= []; % for linking the individual data points afterwards.
+for ibox = 1:3%:size(tmp,2)
+
+    
+    %define median, and interquartile range.   
+    % overlay individual data points. 
+     useD =squeeze(tmp(:,ibox));
+     %plot Median using a solid line.
+     medval = nanmedian(useD);     
+ 
+%% plot an arrow instead.
+% increasingarr = [ibox-.35, medval, ibox+.35, medval];
+% decreasingarr = [ibox+.35, medval, ibox-.35, medval];
+if ibox==3 % F2 increases during diap (and PMD).
+pa=plot_arrow(ibox-.35, medval, ibox+.35, medval, ...
+    'linewidth', 3,'Color', SCcol{ibox},...
+    'facecolor', SCcol{ibox}, 'edgecolor', SCcol{ibox}, 'headwidth', .15);
+else
+   
+pa=plot_arrow( ibox+.35, medval, ibox-.35, medval, ...
+    'linewidth', 3,'Color', SCcol{ibox},...
+    'facecolor', SCcol{ibox}, 'edgecolor', SCcol{ibox}, 'headwidth', .15);
+end
+ hold on
+ %%
+ % add STD patch.
+ pstd =nanstd(useD);
+ xv = [ibox-.15;ibox-.15; ibox+.15; ibox+.15];
+ yv = [medval-pstd; medval+pstd;medval+pstd; medval-pstd];
+%  cv = [1; 1; 0; 0]; %shows decreasing gradient (reap > disap);
+ cv = [0; 0; 1; 1]; %shows increasing gradient (disap > reap);
+%  ptch= patch(xv, yv, cv, 'FaceColor', 'interp');
+ ptch= patch(xv, yv, SCcol{ibox});
+ ptch.EdgeColor = 'w';%SCcol{ibox};
+ ptch.FaceAlpha= .1;
+ %add boxplot lines.
+ %width
+ plot([ibox, ibox], [medval-pstd,medval+pstd], 'linew', 1, 'color', SCcol{ibox});
+ %whiskers
+ plot([ibox-.15, ibox+.15], [medval-pstd,medval-pstd], 'linew', 2, 'color', SCcol{ibox});
+ plot([ibox-.15, ibox+.15], [medval+pstd,medval+pstd], 'linew', 2, 'color', SCcol{ibox});
+
+     %% now adjust scatter points, to offset slightly.     
+     useppants = sum(~isnan(useD)); % adjust so that median bar is centred.
+     ph = repmat(ibox, [useppants,1]);
+     offsets = linspace(-.4, .4, useppants);
+    if ibox==2
+        offsets = linspace(-.2, .2, useppants);
+    end
+         ph = ph+ offsets';
+ 
+     % before plotting, reorder chronologically. 
+     [chron, sID] = sort(useD,'ascend');
+     %% plot with and without markers, to show no IM cases.
+        
+     %using the correct order (sID), determine which entries have IM and
+     %which do not, to change scatter appearance.
+     
+     IM = LOO_firstSIG(sID,3);
+     noIM = find(isnan(IM));
+     wIM = find(~isnan(IM));
+     
+ sc=scatter(ph(wIM), chron(wIM)); % with IM case
+ sc.LineWidth = 1;
+ sc.SizeData = 25;
+% %  sc.MarkerFaceColor = SCcol{ibox};
+  sc.MarkerFaceColor = [1,1,1];
+ sc.MarkerEdgeColor = SCcol{ibox};
+ 
+ hold on
+%%     
+ sc=scatter(ph(noIM), chron(noIM)); % no IM case
+ sc.LineWidth = 1;
+ sc.SizeData = 25;
+%  sc.MarkerFaceColor = [1,1,1];
+ sc.MarkerFaceColor = SCcol{ibox};
+ sc.MarkerEdgeColor = SCcol{ibox};
+% 
+ %
+ 
+ hold on % we need to reorganise to correctly link with individual lines.
+ %at the moment, the yaxis position is reset per freq. we want to reset to
+ %the order shown, starting with order of f2.
+      tmp2=LOO_firstSIG(:,2); % f2 order
+     [~, fID] = sort(tmp2,'ascend');
+ keepscatter_y(:,ibox) = useD(fID); % we now have matched the SNR together.
+ % to retrieve the correct ycoords per SNR point, we need to revert from
+ % chronological order.
+ % revert:
+ [~,rev]=sort(sID, 'ascend');
+ %fix ph
+ phn = ph(rev);
+ %now can store, as the ph matched to SNR value
+  keepscatter_x(:,ibox) = phn(fID);
+ end
+ set(gca, 'Xtick', 1:3, 'Xticklabels', {'Target (f1)' 'IM (f2-f1)', 'Surround (f2)'})
+ hold on; plot(xlim, [0, 0], ['k',':'], 'linew', 2);
+ %%
+ % add connecting lines between f2 and f1.
+ sortlines =0 ;
+for isubs = 1:size(keepscatter_x,1)    
+    hold on
+    %these xvals
+    xvals = keepscatter_x(isubs,:); % row.
+    yvals = keepscatter_y(isubs,:); % row.
+    
+    
+    %sort by timing?
+    if sortlines
+        [yvals, idy]=sort(yvals, 'ascend');
+        xvals = xvals(idy);
+    end
+    if ~isnan(yvals)
+    line(xvals,yvals, 'Color', [.8 .8 .8],'linestyle', '-');
+    else % skip the IM.
+        line(xvals([1,3]),yvals([1,3]), 'Color', [.8 .8 .8],'linestyle', '-');
+    end
+%     line(xp,yp, 'Color', [.8 .8 .8],'linestyle', '-');
+    
+end
+%
+view([90 -90]);
+    axis ij    
+    set(gca, 'ydir', 'normal', 'fontsize', 25);
+ shg
+ ylabel('time from button press (s)')
+ ylim([-1.5 1.5]);
+ set(gcf, 'color', 'w')
+ 
+

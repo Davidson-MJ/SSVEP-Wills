@@ -3,10 +3,10 @@
 clear all; close all; 
 clearvars -except basefol allppants
 
-job.gradedchangesinERPimage_PFI=1;
+job.gradedchangesinERPimage_PFI=0;
 
-job.compareAMOUNT_PFIandPMD=1;
-job.compareAMOUNT_PFIandPMD_raincloudver=0;
+job.compareAMOUNT_PFIandPMD=0;
+job.compareAMOUNT_PFIandPMD_raincloudver=1;
 
 %review:
 job.compareAMOUNT_PFIandPMD_raincloudver2=0;
@@ -111,7 +111,7 @@ if job.compareAMOUNT_PFIandPMD==1;
     plotstacked=1; % stack PFI and PMD ontop of each other
     clf
     %can plot BARS next to trial-by-trial image, or snr-timecourse.
-for     plotBarsorTimeseries=1%
+for     plotBarsorTimeseries=2%
 
     
     getelocs
@@ -133,7 +133,7 @@ for     plotBarsorTimeseries=1%
          hzlabel={'f1', 'f2', '2f1', '2f2', '3f1', '3f2*', 'f2-f1'};
          
          
-    for hzis=2%:6%[1, 2, 7]
+    for hzis=1%:6%[1, 2, 7]
         cd(basefol)
         cd('EEG')
         cd('GFX_EEG-RESS')
@@ -507,7 +507,7 @@ for     plotBarsorTimeseries=1%
          hzlabel={'f1', 'f2', '2f1', '2f2', '3f1', '3f2*', 'f2-f1'};
          
          
-    for hzis=1:2%[1, 2, 7]
+    for hzis=2%:2%[1, 2, 7]
         cd(basefol)
         cd('EEG')
         cd('GFX_EEG-RESS')
@@ -535,7 +535,7 @@ for     plotBarsorTimeseries=1%
         ylimsare=ylimsareHz(hzis,:);
         
         
-        for iPFInCatch=2%:2
+        for iPFInCatch=1:2
         switch iPFInCatch
             case 1
         
@@ -775,8 +775,8 @@ counter2=counter2+1;
       
          
       for i = 1:size(groupednPFISNR,2)
-          d{i,hzis}= NEWdata(:,i)%./(nanmean(NEWdata(:,1)));
-%           d{i,iPFInCatch}= NEWdata(:,i);
+%           d{i,hzis}= NEWdata(:,i)%./(nanmean(NEWdata(:,1)));
+          d{i,iPFInCatch}= NEWdata(:,i);
       end
         end%PFI
         %%
@@ -790,7 +790,7 @@ counter2=counter2+1;
                rb=[0,0,0; 1,0,0];
            end
            
-           rb  = [0,0,1; 0,0,0];
+%            rb  = [0,0,1; 0,0,0];
            %plot rain clouds
            str=rm_raincloud(d, rb, 0,'ks',.18);
 %            str=rm_raincloud(d, rb, 0,'rash');
@@ -800,7 +800,7 @@ counter2=counter2+1;
            xlabel('RESS log(SNR)')
            ylabel('amount of PMD');
            lg=legend([str.p{1,1}, str.p{2,2}] ,['f' num2str(hzis) ' during PFI'], ['f' num2str(hzis) ' during PMD']);
-           lg=legend([str.p{1,1}, str.p{2,2}] ,['f1 during PMD'], ['f2 during PMD']);
+%            lg=legend([str.p{1,1}, str.p{2,2}] ,['f1 during PMD'], ['f2 during PMD']);
            axis tight
            
             set(lg, 'location', 'SouthWest')

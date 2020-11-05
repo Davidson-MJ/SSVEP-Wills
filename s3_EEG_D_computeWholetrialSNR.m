@@ -91,9 +91,17 @@ if job.plotacrossppants==1
     cd('SNR spectrum')
     %%
     figure(1);
-    clf
-    mSNRchan=squeeze(mean(acrossPPSNR(:,62,:),1));
-    mSNRchan=squeeze(mean(acrossPPSPEC(:,62,:),1));
+    clf;
+    set(gcf, 'color', 'w', 'units',' normalized', 'position', [0 .4 .8 .5])
+    for id=1:2
+        switch id
+            case 1
+                
+                mSNRchan=squeeze(mean(acrossPPSPEC(:,62,:),1));
+            case 2
+                mSNRchan=squeeze(mean(acrossPPSNR(:,62,:),1));
+        end
+        subplot(1,2,id);
     plot(f, mSNRchan, 'k')
     hold on
     cols={'b', 'k', 'b', 'k', 'm','m', 'b', 'b', 'k','m','b'};
@@ -129,19 +137,27 @@ if job.plotacrossppants==1
             
         end
         %%
-       lg= legend([p(1), p(2), p(5)], {'F1 and harmonics', 'F2 and harmonics', 'Intermodulation'});
+        if id==2
+       lg= legend([p(1), p(2), p(5)], {'F1 and harmonics', 'F2 and harmonics', 'Intermodulation'});        
        set(lg, 'fontsize', 20)
-       
-        axis tight
+       ylim([-1 6])
+       ylabel('log(SNR)')
+        else
+            ylim([1 10])
+            ylabel('log(power)');
+        end
+            
+%         axis tight
         xlabel('Frequency (Hz)')
-        ylabel('log(SNR)')
+        
         set(gcf, 'color', 'w')
         set(gca, 'fontsize', 35)
 %         ylim([0 .4])
 %%
 xlim([ 0 41])
-ylim([2 10])
-ylim([-1 6])
+
+
+end
         %%
         print('-dpng', 'Whole trial SNR, chan POz')
         %%

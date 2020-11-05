@@ -118,29 +118,45 @@ for iPFI = 1:2
      end
  
      % perform sig tests.
-  
+  %
      for iTEST =1%:2 % compare PFI and then PMD, to baseline.
          pvals=[];
          for itime = 1:size(plotd,2)
              [~, pvals(itime)] = ttest(ttestdata(iTEST,:,itime),compareTO); % PFI
              if pvals(itime)<.05
                  % plot sig uncorr
-                 text(timeax(itime), plotsigat-(iTEST/100), '*','fontsize', 25, 'color', colsare{iTEST})
+%                  text(timeax(itime), plotsigat-(iTEST/100), '-','fontsize', 25, 'color', [.2 .2 .2])
              end
          end
+         
+         %add to figure
+%          text(timeax(find(pvals<.05, 1, 'last')+50), plotsigat-(iTEST/100),['\itp \rm < .05 (uncorr.)'] ,'fontsize', 15, 'color', [.2 .2 .2])
+         
          % perform temporal cluster correction for pval chains:
          [pv, pvals_cor ] = fdr(pvals, .05);
          
          if pv~=0 && pv<.05
-             textis = ['\itp \rm= ' sprintf('%.3f', pv)]; % sig output.
+             textis = ['\itp \rm < .05 (fdr corr.) '];% sprintf('%.3f', pv)]; % sig output.
          else
              textis = '\itns'; % ns
          end
+         %add text to figure
+         
+         %also add the true sig (after threshold).
+         for itime = 1:size(plotd,2)
+             [~, pvals(itime)] = ttest(ttestdata(iTEST,:,itime),compareTO); % PFI
+             if pvals(itime)<=pv
+                 % plot sig uncorr
+                 text(timeax(itime), plotsigat-(iTEST/100), '*','fontsize', 25, 'color', colsare{iTEST})
+             end
+         end
+         
          %add to figure
-         text(timeax(find(pvals<.05, 1, 'last')+50), plotsigat-(iTEST/100),textis ,'fontsize', 15, 'color', colsare{iTEST})
+         text(timeax(find(pvals<pv, 1, 'last')+50), plotsigat-(iTEST/100)+.01,textis ,'fontsize', 15, 'color', colsare{iTEST})
+         
      end
      
-     % finish plot labelling     
+     %% finish plot labelling     
      ylim(ylimsare)
      xlim([-2.5 2.5])     
      xlabel('Time from button press');
