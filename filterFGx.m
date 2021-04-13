@@ -24,8 +24,8 @@ function [filtdat,empVals] = filterFGx(data,srate,f,fwhm,showplot)
 %% input check
 
 if size(data,1)>size(data,2)
-    help filterFGx
-    error('Check data size')
+%     help filterFGx
+%     error('Check data size')
 end
 
 if (f-fwhm)<0
